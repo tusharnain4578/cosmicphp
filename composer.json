@@ -1,0 +1,17 @@
+{
+  "name": "tushar/tusharnain",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "Framework\\": "framework/",
+      "App\\": "app/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Tushar",
+      "email": "naintushar@hotmail.com"
+    }
+  ],
+  "require": {}
+}
