@@ -38,11 +38,17 @@ class Autoload
                 }
 
                 list($name, $value) = explode('=', $line, 2);
+
                 $name = trim($name);
                 $value = trim($value);
 
                 if (strpos($name, ' ') !== false)
                     throw new \Exception("Key $name can't have spaces between it");
+
+                // Check for comments in the value
+                if (($commentPos = strpos($value, '#')) !== false) {
+                    $value = trim(substr($value, 0, $commentPos));
+                }
 
                 if (preg_match('/^["\'](.*)["\']$/', $value, $matches)) {
                     $value = $matches[1];
