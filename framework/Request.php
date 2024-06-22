@@ -31,7 +31,7 @@ class Request
         if (!is_null($this->uri))
             return $this->uri;
 
-        $requestUri = parse_url($_SERVER['REQUEST_URI']);
+        $requestUri = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $requestPath = $requestUri['path'];
         $scriptDir = substr($this->startingScriptUrl(), 0, -strlen('/server.php'));
         $requestPath = substr($requestPath, strlen($scriptDir));

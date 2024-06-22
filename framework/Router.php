@@ -54,7 +54,6 @@ class Router
     private function run(): void
     {
         $callback = null;
-
         foreach ($this->handlers as $handler) {
             $handlerPath = trim($handler['path'], '\/\ ');
             if ($handlerPath === $this->requestPath && $handler['method'] === $this->requestMethod) {
