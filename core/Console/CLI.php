@@ -3,6 +3,7 @@
 namespace Core\Console;
 
 use Core\Database\Migration;
+use Core\Services\Cache;
 
 class CLI
 {
@@ -20,16 +21,19 @@ class CLI
     }
     public function run()
     {
-        switch ($this->param) {
-
-            case 'migrate': {
-                Migration::run();
-                exit;
-            }
-
+        if (str_starts_with($this->param, 'migrate')) {
+            Migration::handleCommand(args: $this->args);
+        } else if (str_starts_with($this->param, 'cache')) {
+            Cache::handleCommand(args: $this->args);
+        } else {
+            self::invalidParamMessage();
         }
+    }
 
-        Console::error(message: 'Invalid Parameter!');
-        exit;
+    public static function invalidParamMessage($message = 'Invalid Parameter!', bool $exit = true)
+    {
+        Console::error(message: $message);
+        if ($exit)
+            exit;
     }
 }

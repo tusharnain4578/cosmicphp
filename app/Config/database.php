@@ -3,7 +3,10 @@
 namespace App\Config;
 
 
-class Database
+/**
+ * Constants of this file must be public.
+ */
+class database
 {
     // a default connection must be in the list
     public const CONNECTION_ARRAY = [

@@ -53,8 +53,6 @@ class Response
 
         if ($this->responseBody)
             echo $this->responseBody;
-
-        exit; // good bye!
     }
 
 }

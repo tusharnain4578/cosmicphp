@@ -1,6 +1,8 @@
 <?php
 
-namespace Core;
+namespace Core\Utilities;
+
+// The rootPath() function is base for all baths, make it return path correctly, all other will work accordingly
 
 class Path
 {
@@ -12,7 +14,7 @@ class Path
     public static function rootPath(string $appendPath = ''): string
     {
         $key = 'root_path' . $appendPath;
-        return self::$paths[$key] ?? (self::$paths[$key] ??= Path::join(dirname(__DIR__), $appendPath));
+        return self::$paths[$key] ?? (self::$paths[$key] ??= Path::join(dirname(FCPATH), $appendPath));
     }
     /**
      * return the path of the app directory

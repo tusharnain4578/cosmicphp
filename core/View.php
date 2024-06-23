@@ -2,17 +2,28 @@
 
 namespace Core;
 
+use Core\Utilities\Path;
+use Core\Utilities\File;
+
 class View
 {
     private const TEMPLATE_DIRECTORY = 'Templates';
     private const TEMPLATE_EXTENSION = '.phtml';
     private string $layoutFile;
     private array $sections = [];
-    private array $sectionStack;
+    private array $sectionStack = [];
     private string $currentSection;
+    private static $error = null;
 
     public function layout(string $layoutView): self
     {
+        if (isset($this->layoutFile))
+            throw new \Exception("Layout can only be set once per view.");
+
+        $layoutViewPath = $this->getFullViewPath($layoutView);
+
+        if (!File::exists($layoutViewPath))
+            throw new \Exception("Layout Template File : $layoutViewPath, doesn't exists.");
         $this->layoutFile = $this->getFullViewPath($layoutView);
         return $this;
     }
@@ -46,28 +57,53 @@ class View
     {
         if (!isset($this->sections[$sectionName])) {
             echo '';
-
             return;
         }
 
-        foreach ($this->sections[$sectionName] as $key => $contents) {
+        foreach ($this->sections[$sectionName] as $key => $contents)
             echo $contents;
-        }
     }
 
     public function render(string $view, array $data = []): string
     {
-        foreach ($data as $varName => $varValue)
-            ${$varName} = $varValue;
+        $viewFilePath = $this->getFullViewPath($view);
 
-        ob_start();
-        require_once $this->getFullViewPath($view);
-        $viewContent = ob_get_clean();
+        if (!File::exists($viewFilePath))
+            throw new \Exception("Template File :  $viewFilePath, doesn't exists.");
+
+
+        $viewContent = (function () use ($viewFilePath, $data): string{
+            try {
+                foreach ($data as $varName => $varValue)
+                    ${$varName} = $varValue;
+                ob_start();
+                require_once $viewFilePath;
+                return ob_get_clean();
+            } catch (\Exception $e) {
+                ob_end_clean();
+                self::$error = $e;
+                return '';
+            }
+        })();
 
         if (isset($this->layoutFile) and $this->layoutFile) {
-            ob_start();
-            require_once $this->layoutFile;
-            $viewContent = ob_get_clean();
+            $viewContent = (function (): string{
+                try {
+                    ob_start();
+                    require_once $this->layoutFile;
+                    return ob_get_clean();
+                } catch (\Exception $e) {
+                    ob_end_clean();
+                    self::$error = $e;
+                    return '';
+                }
+            })();
+        }
+
+        if (self::$error) {
+            if (ob_get_level() > 0)
+                ob_end_clean();
+            throw new \Exception(self::$error);
         }
 
         return $viewContent;

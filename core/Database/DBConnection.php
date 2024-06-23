@@ -23,9 +23,9 @@ abstract class DBConnection
     private static array $conns;
 
 
-    public static function initializeConnection(array $connectionArray)
+    public static function initializeConnection()
     {
-        self::$connectionArray = $connectionArray;
+        self::$connectionArray = \App\Config\database::CONNECTION_ARRAY;
 
         try {
 

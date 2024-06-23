@@ -3,8 +3,9 @@
 namespace Core\Database;
 
 use Core\Console\Console;
-use Core\Path;
-use PDO;
+use Core\Utilities\Path;
+use Core\Console\CLI;
+use Core\Utilities\File;
 
 class Migration
 {
@@ -28,7 +29,7 @@ class Migration
     {
         $fwMigrationsDir = Path::join(Path::frameworkPath(), 'Database', 'Migrations');
 
-        $fwMigFiles = array_diff(scandir($fwMigrationsDir), ['.', '..']);
+        $fwMigFiles = File::scan_directory($fwMigrationsDir);
 
         $fwMigFiles = array_map(fn($file) => [
             'framework' => true,
@@ -39,14 +40,14 @@ class Migration
         return $fwMigFiles;
     }
 
-    public static function run()
+    public static function migrateMigrations()
     {
 
         $migFiles = self::getNecessaryMigrationFiles();
 
         $migrationsDir = Path::join(Path::appPath(), 'Database', 'Migrations');
 
-        $files = array_diff(scandir($migrationsDir), ['.', '..']);
+        $files = File::scan_directory($migrationsDir);
 
         $files = array_map(fn($file) => ['filename' => $file, 'filepath' => Path::join($migrationsDir, $file)], $files);
 
@@ -80,4 +81,19 @@ class Migration
         Console::success("Successfully Executed all migration!");
     }
 
+
+
+    public static function handleCommand(array $args)
+    {
+        $param = $args[0];
+
+        if ($param === 'migrate') {
+            self::migrateMigrations();
+        } else if ($param === 'migrate:rollback') {
+            dd('rollbacking..., lol feature not implemented yet!');
+        } else {
+            CLI::invalidParamMessage();
+        }
+
+    }
 }

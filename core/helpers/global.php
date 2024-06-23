@@ -5,8 +5,14 @@ use Core\Request;
 
 function dd(...$data)
 {
-    foreach ($data as &$dt) {
-        var_dump($dt);
+    foreach ($data as $dt) {
+        if (request()->isCli())
+            var_dump($dt);
+        else {
+            echo '<pre>';
+            echo var_dump($dt);
+            echo '</pre>';
+        }
     }
     die;
 }
@@ -14,6 +20,14 @@ function dd(...$data)
 function app(): \Core\App
 {
     return \Core\App::getInstance();
+}
+
+function env(string $name, mixed $default = null): mixed
+{
+    $value = $_ENV[$name] ?? null;
+    if (is_null($value) && !is_null($default))
+        return $default;
+    return $value ?? null;
 }
 
 function request(bool $shared = true): Request
@@ -51,4 +65,14 @@ function view(string $view, array $data = []): string
 function cache(bool $shared = true): \Core\Services\Cache
 {
     return \Core\Services\Cache::getInstance(shared: $shared);
+}
+
+function base_url(?string $relativeRoute = null): string
+{
+    return request()->getBaseUrl($relativeRoute);
+}
+
+function route(string $name): string
+{
+    return app()->router->route($name);
 }

@@ -2,7 +2,10 @@
 
 namespace Core\Services;
 
-use Core\Path;
+use Core\Console\Console;
+use Core\Utilities\Path;
+use Core\Console\CLI;
+use Core\Utilities\File;
 use InvalidArgumentException;
 
 class Cache
@@ -91,6 +94,20 @@ class Cache
     }
 
     /**
+     * Delete all cache
+     */
+    public function deleteAll()
+    {
+        $files = File::scan_directory($this->cacheDirectory, returnFullPath: true);
+        foreach ($files as &$file)
+            if (!str_ends_with($file, 'index.html')) // excluding index.html file
+                File::delete($file);
+        if (request()->isCli())
+            Console::success("Cache cleared!");
+    }
+
+
+    /**
      * PHP File Cache, create file with the value as content
      * NOTE * -> It can't have expiry time, its for forever, until you refresh the cache
      */
@@ -114,6 +131,20 @@ class Cache
         }
         return null;
     }
+
+
+    public static function handleCommand(array $args)
+    {
+        $param = $args[0];
+
+        if ($param === 'cache:clear') {
+            cache()->deleteAll();
+        } else {
+            CLI::invalidParamMessage();
+        }
+    }
+
+
 
 
 

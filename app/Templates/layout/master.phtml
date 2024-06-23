@@ -2,18 +2,33 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Buzz PHP</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+
+
+    <?= view('layout._styles') ?>
+
 </head>
 
-<body>
-    <h4>Master Layout - <?= $title ?></h4>
-    <div>
-        <?php $this->renderSection('content') ?>
-    </div>
+<body class="d-flex flex-column h-100">
 
-    <?php $this->renderSection('script') ?>
+    <main class="flex-shrink-0">
+
+        <?= view('layout._navbar') ?>
+
+        <?php $this->renderSection('content') ?>
+
+    </main>
+
+    <?= view('layout._footer') ?>
+
+    <?= view('layout._scripts') ?>
+
 </body>
 
 </html>

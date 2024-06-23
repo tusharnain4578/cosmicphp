@@ -8,9 +8,11 @@ ini_set('display_errors', '1');
 
 require_once (__DIR__ . '/../vendor/autoload.php');
 
-use Core\App;
-use App\Config\App as AppConfig;
 
-$app = new App;
+/**
+ * Some Constants
+ */
+define('FCPATH', __DIR__);
 
-$app->run(options: AppConfig::OPTIONS);
+$core = new \Core\App;
+$core->run();

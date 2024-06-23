@@ -2,6 +2,8 @@
 namespace Core;
 
 use Core\Utilities\Arr;
+use Core\Utilities\ClassUtil;
+use Core\Utilities\Path;
 
 class Autoload
 {
@@ -17,60 +19,58 @@ class Autoload
     public static function loadEnv()
     {
 
-        $envArray = cache()->getPHPFileCache(self::ENV_CACHE_PHP_FILE_NAME);
+        // first getting environment variables from app -> config -> Env.php
+        $envDefaultArray = ClassUtil::getClassAllConstants(\App\Config\env::class) ?? [];
+        $envCacheArray = cache()->getPHPFileCache(self::ENV_CACHE_PHP_FILE_NAME) ?? [];
+        $envArray = array_merge($envDefaultArray, $envCacheArray);
 
-        if (!$envArray || !is_array($envArray)) {
-
-            $envArray = [];
+        if (!$envCacheArray || !is_array($envCacheArray)) {
 
             $envFilePath = Path::rootPath(self::DOTENV_FILE_NAME);
 
-            if (!file_exists($envFilePath))
-                throw new \Exception("Environment file does not exist in project root directory.");
+            if (file_exists($envFilePath)) {
+                // Parse .env file and prepare $envArray
+                $lines = file($envFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                if (empty($lines))
+                    return;
+                foreach ($lines as $line) {
+                    if (strpos(trim($line), '#') === 0 || strpos(trim($line), '=') === false)
+                        continue;
 
-            // Parse .env file and prepare $envArray
-            $lines = file($envFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if (empty($lines))
-                return;
-            foreach ($lines as $line) {
-                if (strpos(trim($line), '#') === 0 || strpos(trim($line), '=') === false) {
-                    continue;
-                }
+                    list($name, $value) = explode('=', $line, 2);
 
-                list($name, $value) = explode('=', $line, 2);
+                    $name = trim($name);
+                    $value = trim($value);
 
-                $name = trim($name);
-                $value = trim($value);
+                    if (strpos($name, ' ') !== false)
+                        throw new \Exception("Key $name can't have spaces between it");
 
-                if (strpos($name, ' ') !== false)
-                    throw new \Exception("Key $name can't have spaces between it");
+                    // Check for comments in the value
+                    if (($commentPos = strpos($value, '#')) !== false)
+                        $value = trim(substr($value, 0, $commentPos));
 
-                // Check for comments in the value
-                if (($commentPos = strpos($value, '#')) !== false) {
-                    $value = trim(substr($value, 0, $commentPos));
-                }
-
-                if (preg_match('/^["\'](.*)["\']$/', $value, $matches)) {
-                    $value = $matches[1];
-                } else {
-                    if (strtolower($value) === 'true') {
-                        $value = true;
-                    } elseif (strtolower($value) === 'false') {
-                        $value = false;
-                    } elseif (is_numeric($value)) {
-                        if (ctype_digit($value)) {
-                            $value = (int) $value;
-                        } else {
-                            $value = (float) $value;
+                    if (preg_match('/^["\'](.*)["\']$/', $value, $matches)) {
+                        $value = $matches[1];
+                    } else {
+                        if (strtolower($value) === 'true') {
+                            $value = true;
+                        } elseif (strtolower($value) === 'false') {
+                            $value = false;
+                        } elseif (is_numeric($value)) {
+                            if (ctype_digit($value)) {
+                                $value = (int) $value;
+                            } else {
+                                $value = (float) $value;
+                            }
                         }
                     }
+
+                    $envArray[$name] = $value;
                 }
 
-                $envArray[$name] = $value;
+                $parsedEnvCache = Arr::array_to_php_return_file_string($envArray);
+                cache()->setPHPFileCache(filename: self::ENV_CACHE_PHP_FILE_NAME, content: $parsedEnvCache);
             }
-
-            $parsedEnvCache = Arr::array_to_php_return_file_string($envArray);
-            cache()->setPHPFileCache(filename: self::ENV_CACHE_PHP_FILE_NAME, content: $parsedEnvCache);
         }
 
         foreach ($envArray as $name => $value) {
@@ -87,20 +87,33 @@ class Autoload
      */
     private static array $loadedHelpers = [];
     private const APP_HELPER_DIRECTORY = 'helpers';
-    public static function loadHelper(string $helper, string $helperDirectoryPath = null)
+    public static function loadHelper(string|array $helperName, string $helperDirectoryPath = null)
     {
-        $helperPath = '';
+        $helpers = is_string($helperName) ? [$helperName] : $helperName;
 
-        if (!$helperDirectoryPath)
-            $helperPath = Path::join(Path::appPath(), self::APP_HELPER_DIRECTORY, "$helper.php");
-        else
-            $helperPath = Path::join($helperDirectoryPath, "$helper.php");
 
-        if (!file_exists($helperPath))
-            throw new \Exception("Helper file doesnt exits or given wrong name.");
+        foreach ($helpers as &$helper) {
+            $helperPath = '';
 
-        self::$loadedHelpers[] = $helperPath;
+            if (!$helperDirectoryPath)
+                $helperPath = Path::join(Path::appPath(self::APP_HELPER_DIRECTORY), "$helper.php");
+            else
+                $helperPath = Path::join($helperDirectoryPath, "$helper.php");
 
-        require_once $helperPath;
+            if (!file_exists($helperPath))
+                throw new \Exception("Helper file doesnt exits or given wrong name.");
+
+            self::$loadedHelpers[] = $helperPath;
+
+            require_once $helperPath;
+        }
+    }
+
+
+    // 
+    public static function loadAppHelpers()
+    {
+        $helpers = \App\Config\autoload::AUTOLOAD_HELPERS;
+        self::loadHelper($helpers);
     }
 }
