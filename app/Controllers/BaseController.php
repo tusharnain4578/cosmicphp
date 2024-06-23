@@ -1,7 +1,7 @@
 <?php
 namespace App\Controllers;
 
-use Framework\Controller;
+use Core\Controller;
 
 abstract class BaseController extends Controller
 {

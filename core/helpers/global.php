@@ -1,7 +1,7 @@
 <?php
-use Framework\Database\DBConnection;
-use Framework\Database\QueryBuilder;
-use Framework\Request;
+use Core\Database\DBConnection;
+use Core\Database\QueryBuilder;
+use Core\Request;
 
 function dd(...$data)
 {
@@ -11,9 +11,9 @@ function dd(...$data)
     die;
 }
 
-function app(): \Framework\App
+function app(): \Core\App
 {
-    return \Framework\App::getInstance();
+    return \Core\App::getInstance();
 }
 
 function request(bool $shared = true): Request
@@ -45,10 +45,10 @@ function db(string $group = 'default', bool $shared = true): QueryBuilder
 
 function view(string $view, array $data = []): string
 {
-    return (new \Framework\View)->render($view, $data);
+    return (new \Core\View)->render($view, $data);
 }
 
-function cache(bool $shared = true): \Framework\Services\Cache
+function cache(bool $shared = true): \Core\Services\Cache
 {
-    return \Framework\Services\Cache::getInstance(shared: $shared);
+    return \Core\Services\Cache::getInstance(shared: $shared);
 }

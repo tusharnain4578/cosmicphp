@@ -8,7 +8,7 @@ ini_set('display_errors', '1');
 
 require_once (__DIR__ . '/../vendor/autoload.php');
 
-use Framework\App;
+use Core\App;
 use App\Config\App as AppConfig;
 
 $app = new App;

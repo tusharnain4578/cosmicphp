@@ -1,8 +1,8 @@
 <?php
 
-namespace Framework\Services;
+namespace Core\Services;
 
-use Framework\Path;
+use Core\Path;
 use InvalidArgumentException;
 
 class Cache

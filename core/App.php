@@ -1,9 +1,9 @@
 <?php
 
-namespace Framework;
+namespace Core;
 
-use Framework\Console\CLI;
-use Framework\Database\DBConnection;
+use Core\Console\CLI;
+use Core\Database\DBConnection;
 
 class App
 {

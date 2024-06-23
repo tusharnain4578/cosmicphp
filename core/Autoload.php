@@ -1,7 +1,7 @@
 <?php
-namespace Framework;
+namespace Core;
 
-use Framework\Utilities\Arr;
+use Core\Utilities\Arr;
 
 class Autoload
 {

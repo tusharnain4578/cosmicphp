@@ -1,6 +1,6 @@
 <?php
 
-namespace Framework;
+namespace Core;
 
 class Path
 {
@@ -28,7 +28,7 @@ class Path
     public static function frameworkPath(string $appendPath = '')
     {
         $key = 'framework_path' . $appendPath;
-        return self::$paths[$key] ?? (self::$paths[$key] ??= Path::join(Path::rootPath('framework'), $appendPath));
+        return self::$paths[$key] ?? (self::$paths[$key] ??= Path::join(Path::rootPath('core'), $appendPath));
     }
     /**
      * return the path of the writable directory

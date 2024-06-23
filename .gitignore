@@ -90,7 +90,7 @@ phpunit
 #-------------------------
 # Composer
 #-------------------------
-# vendor/ #gonna keep the vendor because, we are not gonna use any dependencies, its just for autoloading and stufff
+vendor/
 
 #-------------------------
 # IDE / Development Files

@@ -1,6 +1,6 @@
 <?php
 
-namespace Framework\Utilities;
+namespace Core\Utilities;
 
 class Arr
 {

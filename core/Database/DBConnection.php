@@ -1,8 +1,8 @@
 <?php
 
-namespace Framework\Database;
+namespace Core\Database;
 
-use Framework\Console\Console;
+use Core\Console\Console;
 use \PDO;
 use PDOException;
 

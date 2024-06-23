@@ -2,7 +2,7 @@
 
 namespace App\Config;
 
-use Framework\App as FmApp;
+use Core\App as FmApp;
 
 class App
 {

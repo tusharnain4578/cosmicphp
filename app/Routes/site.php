@@ -1,6 +1,6 @@
 <?php
 
-use Framework\Router;
+use Core\Router;
 
 /**
  * @var Router $router

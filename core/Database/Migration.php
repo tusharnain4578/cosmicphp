@@ -1,9 +1,9 @@
 <?php
 
-namespace Framework\Database;
+namespace Core\Database;
 
-use Framework\Console\Console;
-use Framework\Path;
+use Core\Console\Console;
+use Core\Path;
 use PDO;
 
 class Migration

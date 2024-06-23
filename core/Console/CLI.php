@@ -1,8 +1,8 @@
 <?php
 
-namespace Framework\Console;
+namespace Core\Console;
 
-use Framework\Database\Migration;
+use Core\Database\Migration;
 
 class CLI
 {
