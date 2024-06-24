@@ -4,6 +4,7 @@ namespace Core\Console;
 
 use Core\Database\Migration;
 use Core\Services\Cache;
+use Core\Utilities\Path;
 
 class CLI
 {
@@ -52,7 +53,8 @@ class CLI
     {
         $devServerBaseUrl = env('DEVELOPMENT_SERVER_BASE_URL', CLI::DEFAULT_DEV_SERVER_BASE_URL);
         $devServerBaseUrl = ltrim($devServerBaseUrl, '\http://\https://');
-        exec("cd public/ && php -S $devServerBaseUrl");
+        $path = FCPATH;
+        exec("php -S $devServerBaseUrl -t $path");
         exit;
     }
 }
