@@ -3,7 +3,7 @@
   "type": "project",
   "autoload": {
     "psr-4": {
-      "Core\\": "core/",
+      "Core\\": "Core/",
       "App\\": "app/"
     }
   },

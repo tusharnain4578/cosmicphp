@@ -51,14 +51,15 @@ class App
         // Setup Database Connection, if credentials given
         DBConnection::initializeConnection();
 
-        // Setup Router
-        if (!$this->request->isCli() && !isset($this->router))
-            ($this->router = new Router())->init();
 
-        // Setup CLI
-        // cli must be setup in last
-        if (($this->appConfig['ENABLE_CLI'] ?? true) && !isset($this->cli) && $this->request->isCli())
-            ($this->cli = new CLI)->run();
+        // From CLI and Router only 1 can be active at a time, they must be setup in end of application
+        if ($this->request->isCli()) {
+            if (($this->appConfig['ENABLE_CLI'] ?? true) && !isset($this->cli))
+                ($this->cli = new CLI)->run();
+        } else {
+            if (!isset($this->router))
+                ($this->router = new Router())->init();
+        }
     }
 
     public function run()

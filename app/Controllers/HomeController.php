@@ -11,7 +11,7 @@ class HomeController extends BaseController
     }
     public function projects()
     {
-        return view('projects');
+        return $this->response->view('projects');
     }
     public function contact()
     {

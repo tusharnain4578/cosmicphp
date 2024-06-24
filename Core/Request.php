@@ -2,6 +2,8 @@
 
 namespace Core;
 
+use App\Config\request as requestConfig;
+
 class Request
 {
     private ?string $uri = null;
@@ -69,4 +71,39 @@ class Request
         return $baseUrl . $relativeRoute;
     }
 
+    public function input(?string $key = null)
+    {
+        if (isset($key)) {
+            $value = $_POST[$key] ?? $_GET[$key] ?? null;
+            return requestConfig::input_gate($value);
+        }
+
+        $inputs = array_merge($_GET, $_POST);
+        foreach ($inputs as $key => $value)
+            $inputs[$key] = requestConfig::input_gate($value);
+        return $inputs;
+    }
+
+
+    public function inputGet(?string $key = null)
+    {
+        if (isset($key)) {
+            $value = $_GET[$key] ?? null;
+            return requestConfig::input_gate($value);
+        }
+        foreach ($_GET as $key => $value)
+            $inputs[$key] = requestConfig::input_gate($value);
+        return $inputs;
+    }
+
+    public function inputPost(?string $key = null)
+    {
+        if (isset($key)) {
+            $value = $_POST[$key] ?? null;
+            return requestConfig::input_gate($value);
+        }
+        foreach ($_POST as $key => $value)
+            $inputs[$key] = requestConfig::input_gate($value);
+        return $inputs;
+    }
 }

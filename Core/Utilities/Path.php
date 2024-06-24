@@ -30,7 +30,7 @@ class Path
     public static function frameworkPath(string $appendPath = '')
     {
         $key = 'framework_path' . $appendPath;
-        return self::$paths[$key] ?? (self::$paths[$key] ??= Path::join(Path::rootPath('core'), $appendPath));
+        return self::$paths[$key] ?? (self::$paths[$key] ??= Path::join(Path::rootPath('Core'), $appendPath));
     }
     /**
      * return the path of the writable directory
