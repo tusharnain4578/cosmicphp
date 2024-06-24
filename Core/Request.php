@@ -2,15 +2,19 @@
 
 namespace Core;
 
+use Core\Console\CLI;
 use App\Config\request as requestConfig;
 
 class Request
 {
     private ?string $uri = null;
-    private ?string $baseUrl = null;
+    private static ?string $baseUrl = null;
     private static Request $sharedRequest;
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
+    public const PHP_SAPI_CLI = 'cli';
+    public const PHP_SAPI_CLI_SERVER = 'cli-server';
+    public const DEFAULT_BASE_URL = 'http://localhost';
 
     public static function getInstance(bool $shared = false): Request
     {
@@ -46,7 +50,11 @@ class Request
 
     public function isCli(): bool
     {
-        return strtoupper(php_sapi_name()) == 'CLI';
+        return strtolower(php_sapi_name()) == Request::PHP_SAPI_CLI;
+    }
+    public function isCliServer(): bool
+    {
+        return strtolower(php_sapi_name()) == Request::PHP_SAPI_CLI_SERVER;
     }
 
 
@@ -66,7 +74,11 @@ class Request
 
     public function getBaseUrl(?string $relativeRoute = null): string
     {
-        $baseUrl = $this->baseUrl ?? trim(($this->baseUrl ??= env('BASE_URL', '')), '\/\ ');
+        $baseUrl = self::$baseUrl ?? (function (): string{
+            $envBaseUrl = $this->isCliServer() ? env('DEVELOPMENT_SERVER_BASE_URL', CLI::DEFAULT_DEV_SERVER_BASE_URL) : env('BASE_URL', Request::DEFAULT_BASE_URL);
+            return trim((self::$baseUrl ??= $envBaseUrl), '\/\ ');
+        })();
+
         $relativeRoute = $relativeRoute ? '/' . trim($relativeRoute, '\/\ ') : '';
         return $baseUrl . $relativeRoute;
     }
