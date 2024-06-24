@@ -105,7 +105,26 @@ class Router
         return $this;
     }
 
+    public function withoutMiddleware(string|array $middleware): self
+    {
+        $routeIndex = $this->routesCount - 1;
+        if (($this->routesCount > 0) && isset($this->routes[$routeIndex])) {
+            if (is_string($middleware))
+                $middleware = [$middleware];
+            foreach ($middleware as &$mw) {
+                $mw = trim($mw);
+                if (empty($mw))
+                    throw new \Exception("Middleware cannot be empty!");
+                // remove the middleware
+                foreach ($this->routes[$routeIndex]['middlewares'] as $index => &$routeMw) {
+                    if ($routeMw === $mw)
+                        unset($this->routes[$routeIndex]['middlewares'][$index]);
+                }
 
+            }
+        }
+        return $this;
+    }
 
 
     /**
@@ -148,9 +167,7 @@ class Router
         }
 
         if ($targetRoute) {
-
             $this->executeRoute($targetRoute);
-
         } else {
             echo "NOT FOUND";
         }
@@ -183,21 +200,24 @@ class Router
 
         $this->routesCount++; // placed right after insertion of routes array
 
-
-
         if (!empty($this->currentGroup)) {
-
-            // applying group middlewares
-            $groupMiddlewares = array_column($this->currentGroup, 'middleware');
-            if (!empty($groupMiddlewares))
+            // applying and removing group middlewares
+            foreach ($this->currentGroup as $group) {
+                $groupMiddlewares = $group['middleware'] ?? [];
+                $groupWithoutMiddlewares = $group['withoutMiddleware'] ?? [];
                 $this->middleware(middleware: $groupMiddlewares);
-
+                $this->withoutMiddleware(middleware: $groupWithoutMiddlewares);
+            }
         }
 
 
         // applying middlewares
         if (isset($routeOptions['middleware']))
             $this->middleware($routeOptions['middleware']);
+
+        // removing middlewares
+        if (isset($routeOptions['withoutMiddleware']))
+            $this->withoutMiddleware($routeOptions['withoutMiddleware']);
 
         if (isset($routeOptions['name']))
             $this->name($routeOptions['name']);
@@ -218,8 +238,7 @@ class Router
     private function executeRoute(array $route)
     {
         $middlewares = array_map(function (string $middleware) {
-            if (!class_exists($middleware))
-                $middlewareObj = middlewareConfig::getMiddlewareFromAlias(alias: $middleware);
+            $middlewareObj = class_exists($middleware) ? new $middleware() : middlewareConfig::getMiddlewareFromAlias(alias: $middleware);
             if (!($middlewareObj instanceof IMiddleware))
                 throw new \Exception("Middleware : $middleware is not a valid middleware class.");
             return $middlewareObj;
