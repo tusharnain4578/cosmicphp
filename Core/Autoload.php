@@ -4,6 +4,7 @@ namespace Core;
 use Core\Utilities\Arr;
 use Core\Utilities\ClassUtil;
 use Core\Utilities\Path;
+use App\Config\env as envConfig;
 
 class Autoload
 {
@@ -20,7 +21,7 @@ class Autoload
     {
 
         // first getting environment variables from app -> config -> Env.php
-        $envDefaultArray = ClassUtil::getClassAllConstants(\App\Config\env::class) ?? [];
+        $envDefaultArray = ClassUtil::reflection(envConfig::class)->getConstants() ?? [];
         $envCacheArray = cache()->getPHPFileCache(self::ENV_CACHE_PHP_FILE_NAME) ?? [];
         $envArray = array_merge($envDefaultArray, $envCacheArray);
 

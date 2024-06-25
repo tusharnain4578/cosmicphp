@@ -1,0 +1,11 @@
+<?php
+
+// View File -> {{filename}}
+
+use Core\View;
+
+/**
+ * @var View $this
+ */
+
+?>

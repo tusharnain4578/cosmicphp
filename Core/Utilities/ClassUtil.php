@@ -2,12 +2,17 @@
 
 namespace Core\Utilities;
 
+use ReflectionClass;
+
 class ClassUtil
 {
-    public static function getClassAllConstants(string $class): array
+    private static array $reflections = [];
+    public static function reflection(string $class): ReflectionClass
     {
-        self::validateClass($class);
-        return (new \ReflectionClass($class))->getConstants();
+        return self::$reflections[$class] ??= (function () use (&$class): ReflectionClass{
+            self::validateClass($class);
+            return new ReflectionClass($class);
+        })();
     }
 
 

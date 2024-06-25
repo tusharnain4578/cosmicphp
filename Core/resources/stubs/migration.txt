@@ -1,0 +1,19 @@
+<?php
+
+namespace {{namespace}};
+
+class {{classname}}
+{
+    public string $table = '';
+    public string $group = '';
+
+    public function up()
+    {
+
+    }
+
+    public function down()
+    {
+
+    }
+}

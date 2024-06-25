@@ -20,6 +20,12 @@ class CLI
             Console::error(message: "Parameter Required!");
             exit;
         }
+
+        Console::init();
+    }
+    public function __destruct()
+    {
+        Console::close();
     }
     public function run()
     {
@@ -35,6 +41,10 @@ class CLI
 
             Cache::handleCommand(args: $this->args);
 
+        } else if (str_starts_with($this->param, 'create')) {
+
+            FileGenerator::handleConsole(args: $this->args);
+
         } else {
 
             self::invalidParamMessage();
@@ -49,12 +59,13 @@ class CLI
             exit;
     }
 
-    public static function runDevServer()
+    private static function runDevServer()
     {
         $devServerBaseUrl = env('DEVELOPMENT_SERVER_BASE_URL', CLI::DEFAULT_DEV_SERVER_BASE_URL);
         $devServerBaseUrl = ltrim($devServerBaseUrl, '\http://\https://');
         $path = FCPATH;
         exec("php -S $devServerBaseUrl -t $path");
     }
+
 
 }

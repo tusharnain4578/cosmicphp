@@ -4,19 +4,16 @@ namespace App\Config;
 
 
 /**
- * Constants of this file must be public.
+ * Constants of this file must be static.
  */
 class database
 {
     // a default connection must be in the list
-    public const CONNECTION_ARRAY = [
-        'default' => [
-            'hostname' => 'localhost',
-            'username' => 'admin',
-            'password' => 'Tushar@4578',
-            'database' => 'testDb',
-            'port' => 3306,
-        ]
+    private static array $default = [
+        'hostname' => 'localhost',
+        'username' => 'admin',
+        'password' => 'Tushar@4578',
+        'database' => 'testDb',
+        'port' => 3306,
     ];
-
 }

@@ -1,0 +1,16 @@
+<?php
+
+namespace {{namespace}};
+
+use Core\Controller;
+
+
+class {{classname}} extends Controller
+{
+
+    
+    public function index()
+    {
+        
+    }
+}

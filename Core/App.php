@@ -5,7 +5,7 @@ namespace Core;
 use Core\Console\CLI;
 use Core\Utilities\ClassUtil;
 use Core\Utilities\Path;
-use Core\Database\DBConnection;
+use App\Config\app as appConfig;
 
 class App
 {
@@ -40,7 +40,7 @@ class App
 
     private function setupApplication()
     {
-        $this->appConfig = ClassUtil::getClassAllConstants(\App\Config\app::class);
+        $this->appConfig = ClassUtil::reflection(appConfig::class)->getConstants();
 
         // First Loading .env file
         Autoload::loadEnv();

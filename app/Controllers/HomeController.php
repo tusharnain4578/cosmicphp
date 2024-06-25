@@ -2,8 +2,10 @@
 
 namespace App\Controllers;
 
+use Core\Controller;
 
-class HomeController extends BaseController
+
+class HomeController extends Controller
 {
     public function resume()
     {
@@ -19,9 +21,6 @@ class HomeController extends BaseController
     }
     public function index()
     {
-
-
-
         return view('home');
     }
 }

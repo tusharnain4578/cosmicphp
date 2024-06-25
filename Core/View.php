@@ -7,8 +7,8 @@ use Core\Utilities\File;
 
 class View
 {
-    private const TEMPLATE_DIRECTORY = 'Templates';
-    private const TEMPLATE_EXTENSION = '.phtml';
+    public const TEMPLATE_DIRECTORY = 'Templates';
+    public const TEMPLATE_EXTENSION = '.phtml';
     private string $layoutFile;
     private array $sections = [];
     private array $sectionStack = [];

@@ -2,6 +2,8 @@
 
 namespace Core\Utilities;
 
+use Core\Console\Console;
+use Core\Exceptions\FileAlreadyExistsException;
 use Core\Utilities\Path;
 
 class File
@@ -10,6 +12,18 @@ class File
     public static function exists(string $filePath): bool
     {
         return file_exists($filePath);
+    }
+
+    public static function create(string $filePath, string $content)
+    {
+        if (file_exists($filePath))
+            throw new FileAlreadyExistsException("File : '$filePath' already exists!");
+
+        $dirname = dirname($filePath);
+        if (!file_exists($dirname))
+            mkdir(directory: $dirname, recursive: true);
+
+        file_put_contents($filePath, $content);
     }
 
     public static function delete(string $filePath, $throwExceptionIfFileNotExists = false)

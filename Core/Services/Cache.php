@@ -140,10 +140,12 @@ class Cache
     {
         $param = $args[0];
 
-        if ($param === 'cache:clear') {
-            cache()->deleteAll();
-        } else {
-            CLI::invalidParamMessage();
+        switch ($param) {
+            case 'cache:clear':
+                cache()->deleteAll();
+                break;
+            default:
+                CLI::invalidParamMessage();
         }
     }
 
