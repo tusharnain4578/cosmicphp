@@ -48,10 +48,6 @@ class App
         // Setup Autoload Files
         Autoload::loadAppHelpers();
 
-        // Setup Database Connection, if credentials given
-        DBConnection::initializeConnection();
-
-
         // From CLI and Router only 1 can be active at a time, they must be setup in end of application
         if ($this->request->isCli()) {
             if (($this->appConfig['ENABLE_CLI'] ?? true) && !isset($this->cli))

@@ -7,6 +7,7 @@ use App\Config\middleware as middlewareConfig;
 use Core\Interfaces\IMiddleware;
 use Core\Utilities\File;
 use Core\Utilities\Path;
+use Core\Utilities\Arr;
 use App\Config\router as routerConfig;
 
 class Router
@@ -23,6 +24,7 @@ class Router
     private int $routesCount = 0;
     private array $currentGroup = []; // prefix(string) as key and options(array) as value
     private string $ROUTE_GROUP_NAME_SEPARATOR = '.';
+    public const ROUTE_CACHE_PHP_FILE_NAME = 'core_routes.php';
 
     public function __construct()
     {
@@ -141,15 +143,32 @@ class Router
 
     public function init()
     {
-        // will scan the application Router Directory to initalize router from all files
-        $appRoutesPath = Path::appPath('Routes');
-        $routeFiles = File::scan_directory($appRoutesPath);
-        foreach ($routeFiles as $file) {
-            (function () use ($appRoutesPath, $file) {
-                $router = $this;
-                require_once $appRoutesPath . DIRECTORY_SEPARATOR . $file;
-            })();
+
+        $cachedRouteData = cache()->getPHPFileCache(self::ROUTE_CACHE_PHP_FILE_NAME);
+
+        if ($cachedRouteData && is_array($cachedRouteData) && !empty($cachedRouteData)) {
+            $this->routes = $cachedRouteData['routes'] ?? [];
+            $this->namedRoutes = $cachedRouteData['named_routes'] ?? [];
+            $this->routesCount = $cachedRouteData['count'] ?? 0;
+        } else {
+            // will scan the application Router Directory to initalize router from all files
+            // and populate the $this->routes array
+            $appRoutesPath = Path::appPath('Routes');
+            $routeFiles = File::scan_directory($appRoutesPath);
+            foreach ($routeFiles as $file) {
+                (function () use ($appRoutesPath, $file) {
+                    $router = $this;
+                    require_once $appRoutesPath . DIRECTORY_SEPARATOR . $file;
+                })();
+            }
+            // caching routes
+            if (!empty($this->routes)) {
+                $cacheData = ['routes' => $this->routes, 'named_routes' => $this->namedRoutes, 'count' => $this->routesCount];
+                $phpFileContent = Arr::array_to_php_return_file_string($cacheData);
+                cache()->setPHPFileCache(filename: self::ROUTE_CACHE_PHP_FILE_NAME, content: $phpFileContent);
+            }
         }
+
         $this->run();
     }
 
@@ -158,6 +177,7 @@ class Router
     private function run(): void
     {
         $targetRoute = null;
+
         foreach ($this->routes as $route) {
             $routePath = $route['path'];
             if ($routePath === $this->requestPath && $route['method'] === $this->requestMethod) {

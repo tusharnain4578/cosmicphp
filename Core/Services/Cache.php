@@ -110,6 +110,7 @@ class Cache
     /**
      * PHP File Cache, create file with the value as content
      * NOTE * -> It can't have expiry time, its for forever, until you refresh the cache
+     * # Dont use reserved file names ['core_routes.php', 'core_env.php'], otherwise application will not run correctly
      */
     public function setPHPFileCache(string $filename, string $content)
     {
@@ -121,7 +122,7 @@ class Cache
      * File Cache, gets the content of cached file
      * NOTE * -> It doesnt have any expiration, so if it returns null, it means cache doesnt exists
      */
-    public function getPHPFileCache(string $filename)
+    public function getPHPFileCache(string $filename): mixed
     {
         $this->validateFileCacheName(filename: $filename);
         $cacheFilePath = Path::join($this->cacheDirectory, $filename);
@@ -131,6 +132,8 @@ class Cache
         }
         return null;
     }
+
+
 
 
     public static function handleCommand(array $args)

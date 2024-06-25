@@ -8,7 +8,10 @@ use PDOException;
 
 abstract class DBConnection
 {
-    private static array $connectionArray;
+    /**
+     * @var list<array>
+     */
+    private const CONNECTION_ARRAY = \App\Config\database::CONNECTION_ARRAY;
     private const PDO_OPTIONS = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,        // Throw exceptions on errors
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,     // Fetch results as objects
@@ -23,86 +26,50 @@ abstract class DBConnection
     private static array $conns;
 
 
-    public static function initializeConnection()
+    private static function getConnection(string $group = 'default'): PDO
     {
-        self::$connectionArray = \App\Config\database::CONNECTION_ARRAY;
+        $connection = self::CONNECTION_ARRAY[$group];
 
-        try {
+        $host = $connection['hostname'];
+        $username = $connection['username'];
+        $database = $connection['database'];
+        $password = $connection['password'];
 
-            foreach (self::$connectionArray as $name => $connection) {
-                $host = $connection['hostname'];
-                $username = $connection['username'];
-                $database = $connection['database'];
-                $password = $connection['password'];
+        $dsn = "mysql:host=$host;dbname=$database;charset=utf8mb4";
 
-                $dsn = "mysql:host=$host;dbname=$database;charset=utf8mb4";
-
-                self::$conns[$name] = new PDO($dsn, $username, $password, self::PDO_OPTIONS);
-            }
-
-        } catch (PDOException $e) {
-            echo "Connection failed: " . $e->getMessage();
-        }
+        return new PDO($dsn, $username, $password, self::PDO_OPTIONS);
     }
 
 
     public static function pdo(string $name): PDO|null
     {
-        return self::$conns[$name] ?? null;
+        return self::$conns[$name] ?? (self::$conns[$name] ??= self::getConnection($name));
     }
 
-    public static function transaction(callable $func, ?PDO $pdo = null)
-    {
-        $pdo = is_null($pdo) ? self::pdo('default') : $pdo;
+    // public static function transaction(callable $func, ?PDO $pdo = null)
+    // {
+    //     $pdo = is_null($pdo) ? self::pdo('default') : $pdo;
 
-        $pdo->beginTransaction();
+    //     $pdo->beginTransaction();
 
-        try {
+    //     try {
 
-            $func($pdo); // use only this pdo inside the transaction call back
+    //         $func($pdo); // use only this pdo inside the transaction call back
 
-            if (!$pdo->inTransaction())
-                throw new \Exception("Transaction ended prematurely");
+    //         if (!$pdo->inTransaction())
+    //             throw new \Exception("Transaction ended prematurely");
 
-            $pdo->commit();
+    //         $pdo->commit();
 
-        } catch (\Exception $e) {
+    //     } catch (\Exception $e) {
 
-            if ($pdo->inTransaction())
-                $pdo->rollBack();
+    //         if ($pdo->inTransaction())
+    //             $pdo->rollBack();
 
-            throw $e;
-        }
-    }
+    //         throw $e;
+    //     }
+    // }
 
 
-    public static function insert(string $table, array $data, ?PDO $pdo = null): bool
-    {
-        try {
-            $pdo = is_null($pdo) ? self::pdo('default') : $pdo;
 
-            // Build the query
-            $backTickedColumns = array_map(fn($el) => "`$el`", array_keys($data));
-            $columns = implode(', ', $backTickedColumns);
-
-            $placeholders = ':' . implode(', :', array_keys($data));
-            $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-
-            // Prepare the statement
-            $stmt = $pdo->prepare($sql);
-            // Bind parameters
-            foreach ($data as $key => $value)
-                $stmt->bindValue(":$key", $value);
-
-            // Execute the statement
-            return $stmt->execute();
-
-        } catch (\Exception $e) {
-
-            Console::error($e->getMessage());
-
-            throw $e;
-        }
-
-    }
 }

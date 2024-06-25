@@ -8,7 +8,7 @@ use Core\Utilities\Path;
 class Autoload
 {
     private const DOTENV_FILE_NAME = '.env';
-    private const ENV_CACHE_PHP_FILE_NAME = 'env.php';
+    public const ENV_CACHE_PHP_FILE_NAME = 'core_env.php';
 
 
     /*

@@ -19,8 +19,6 @@ class Migration
             'created_at' => date('Y-m-d H:i:s')
         ];
 
-
-        DBConnection::insert(table: self::MIGRATION_TABLE, data: $data);
     }
 
 
@@ -59,23 +57,9 @@ class Migration
             $path = $file['filepath'];
             $filename = $file['filename'];
             $isFramework = isset($file['framework']);
-            $sql = file_get_contents($path);
 
-            try {
 
-                if (!$isFramework)
-                    Console::info("Running Migration : $filename");
 
-                pdo_instance()->exec($sql);
-
-                if (!$isFramework)
-                    self::addMigrationEntry($filename, 'default');
-
-            } catch (\Exception $e) {
-                Console::error("Failed to run migration : $filename");
-                echo $e->getMessage();
-                die;
-            }
         }
 
         Console::success("Successfully Executed all migration!");
