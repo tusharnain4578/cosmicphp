@@ -55,6 +55,6 @@ class CLI
         $devServerBaseUrl = ltrim($devServerBaseUrl, '\http://\https://');
         $path = FCPATH;
         exec("php -S $devServerBaseUrl -t $path");
-        exit;
     }
+
 }
