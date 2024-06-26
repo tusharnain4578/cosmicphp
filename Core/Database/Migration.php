@@ -3,81 +3,132 @@
 namespace Core\Database;
 
 use Core\Console\Console;
-use Core\Utilities\Path;
-use Core\Console\CLI;
 use Core\Utilities\File;
+use Core\Utilities\Path;
+use Core\Utilities\Rex;
 
-class Migration
+abstract class Migration
 {
-    const MIGRATION_TABLE = 'migrations';
-    private static function addMigrationEntry(string $filename, string $group)
+    private const MIGRATION_TABLE = 'migrations';
+    public abstract function up(): string;
+    public abstract function down(): string;
+
+    public static function runMigrations()
     {
-        $data = [
-            'file_name' => $filename,
-            'group' => $group,
-            'batch' => 2,
-            'created_at' => date('Y-m-d H:i:s')
-        ];
+        $MigFileData = array_merge(
+            self::getAllMigrationFileData(Path::join(Path::frameworkPath('Database'), 'Migrations'), framework: true),
+            self::getAllMigrationFileData(Path::join(Path::appPath('Database'), 'Migrations'))
+        );
 
-    }
+        $defaultDb = db();
 
+        // get migration logs from database
+        $executedMigrations = $defaultDb->tableExists(self::MIGRATION_TABLE) ? $defaultDb->table(self::MIGRATION_TABLE)->get()->result() : [];
+        $executedMigrationsCount = count($executedMigrations);
 
-
-    private static function getNecessaryMigrationFiles(): array
-    {
-        $fwMigrationsDir = Path::join(Path::frameworkPath(), 'Database', 'Migrations');
-
-        $fwMigFiles = File::scan_directory($fwMigrationsDir);
-
-        $fwMigFiles = array_map(fn($file) => [
-            'framework' => true,
-            'filename' => $file,
-            'filepath' => Path::join($fwMigrationsDir, $file)
-        ], $fwMigFiles);
-
-        return $fwMigFiles;
-    }
-
-    public static function migrateMigrations()
-    {
-
-        $migFiles = self::getNecessaryMigrationFiles();
-
-        $migrationsDir = Path::join(Path::appPath(), 'Database', 'Migrations');
-
-        $files = File::scan_directory($migrationsDir);
-
-        $files = array_map(fn($file) => ['filename' => $file, 'filepath' => Path::join($migrationsDir, $file)], $files);
+        $batch = $executedMigrationsCount === 0 ? 1 : $executedMigrations[$executedMigrationsCount - 1]->batch + 1;
 
 
-        // appending files into $migFiles
-        $allMigFiles = array_merge($migFiles, $files);
+        $migrationExecutedCount = 0;
 
-        foreach ($allMigFiles as $file) {
-            $path = $file['filepath'];
-            $filename = $file['filename'];
-            $isFramework = isset($file['framework']);
+        // Looping through app migrations
+
+        foreach ($MigFileData as $filedata) {
+
+            $class = $filedata['class'];
+            $filename = $filedata['filename'];
+
+            try {
 
 
+                $obj = new $class();
+
+                if (method_exists($obj, method: 'up')) {
+
+                    $query = trim($obj->up());
+
+                    if (empty($query))
+                        throw new \Exception("Migration : '$class' has empty query returned!");
+
+                    $group = (property_exists($obj, 'group') && !empty(trim($obj->group ?? ''))) ? $obj->group : 'default';
+                    $filedata['group'] = $group;
+
+                    // checking if already executed
+                    $isExecutedBefore = (function () use (&$executedMigrations, &$filedata): bool{
+                        foreach ($executedMigrations as &$mig) {
+                            if ($filedata['framework'] || ($mig->class === $filedata['class'] && $mig->filename === $filedata['filename'] && $mig->group === $filedata['group']))
+                                return true;
+                        }
+                        return false;
+                    })();
+
+                    if ($isExecutedBefore)
+                        continue;
+
+                    db($group)->query($query);
+
+                    if (!(property_exists($obj, 'isCore') && $obj->isCore)) {
+                        // If this is app migration, only then we will log it+
+
+                        db()->table(self::MIGRATION_TABLE)->insert([
+                            'class' => $class,
+                            'filename' => $filename,
+                            'group' => $group,
+                            'batch' => $batch,
+                            'created_at' => Rex::now()
+                        ]);
+
+                        Console::success("Migration executed : $filename");
+
+                        $migrationExecutedCount++;
+                    }
+                }
+
+            } catch (\Exception $e) {
+                Console::error("Error executing migration : $filename");
+                throw $e;
+            }
 
         }
 
-        Console::success("Successfully Executed all migration!");
+        if ($migrationExecutedCount === 0) {
+            Console::success("Nothing to migrate!");
+        }
     }
 
+    private static function getAllMigrationFileData(string $directory, bool $framework = false): array
+    {
+        $migFiles = File::scan_directory($directory, returnFullPath: true);
+        natcasesort($migFiles);
 
+        $classesBefore = get_declared_classes();
+        foreach ($migFiles as $file)
+            require_once $file;
+        $classesAfter = get_declared_classes();
+
+        $classes = array_diff($classesAfter, $classesBefore);
+        $classesFirstKey = array_key_first($classes);
+
+        if (count($migFiles) !== count($classes))
+            throw new \Exception("Irregularity in migration files and classes. Each migration file should have only 1 class defined.");
+
+        foreach ($migFiles as $index => $file)
+            $migFiles[$index] = ['class' => $classes[$classesFirstKey + $index], 'filename' => basename($file), 'framework' => $framework];
+
+        return $migFiles;
+    }
 
     public static function handleCommand(array $args)
     {
         $param = $args[0];
 
-        if ($param === 'migrate') {
-            self::migrateMigrations();
-        } else if ($param === 'migrate:rollback') {
-            dd('rollbacking..., lol feature not implemented yet!');
-        } else {
-            CLI::invalidParamMessage();
+        switch ($param) {
+            case 'migrate':
+                self::runMigrations();
+                break;
+            default:
+                throw new \Exception("Invalid parameter : $param");
         }
-
     }
+
 }

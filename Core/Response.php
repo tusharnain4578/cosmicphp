@@ -7,24 +7,28 @@ class Response
     private static string $responseBody = '';
     public const RESPONSE_CONTENT_TYPE_HTML = 'text/html';
     public const RESPONSE_CONTENT_TYPE_JSON = 'application/json';
+    private static string $contentType = self::RESPONSE_CONTENT_TYPE_HTML;
 
-
-    public function setContectType(string $type): void
+    public function setContentType(string $type): void
     {
-        header('Content-Type: ' . $type);
+        self::$contentType = $type;
+    }
+    public function getContentType(): string
+    {
+        return self::$contentType;
     }
 
-    public function json(array $data): self
+    public function json(array|string $data): self
     {
-        $this->setContectType(self::RESPONSE_CONTENT_TYPE_JSON);
-        self::$responseBody = json_encode($data);
+        $this->setContentType(self::RESPONSE_CONTENT_TYPE_JSON);
+        self::$responseBody = is_string($data) ? $data : json_encode($data);
         return $this;
     }
 
     public function html(string $htmlContent): self
     {
         self::$responseBody = $htmlContent;
-        $this->setContectType(self::RESPONSE_CONTENT_TYPE_HTML);
+        $this->setContentType(self::RESPONSE_CONTENT_TYPE_HTML);
         return $this;
     }
 
@@ -32,7 +36,7 @@ class Response
     {
         $viewObj = new View;
         self::$responseBody = $viewObj->render(view: $view, data: $data);
-        $this->setContectType(self::RESPONSE_CONTENT_TYPE_HTML);
+        $this->setContentType(self::RESPONSE_CONTENT_TYPE_HTML);
         return $this;
     }
 
@@ -50,8 +54,8 @@ class Response
         if ($data)
             $this->setResponseBody($data);
 
-        if (self::$responseBody)
-            echo self::$responseBody;
+        header('Content-Type: ' . self::$contentType);
+        echo self::$responseBody;
         exit;
     }
 
@@ -74,4 +78,13 @@ class Response
         return self::$responseBody;
     }
 
+    /**
+     * Only work when response body is of type application/json
+     */
+    public function appendResponseHtml(string $content): void
+    {
+        if (self::$contentType === Response::RESPONSE_CONTENT_TYPE_HTML) {
+            self::$responseBody .= $content;
+        }
+    }
 }

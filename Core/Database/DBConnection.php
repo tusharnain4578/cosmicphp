@@ -3,7 +3,7 @@
 namespace Core\Database;
 
 use Core\Console\Console;
-use Core\Utilities\ClassUtil;
+use Core\Utilities\Classic;
 use App\Config\database as databaseConfig;
 use \PDO;
 use PDOException;
@@ -32,7 +32,7 @@ abstract class DBConnection
     private static function getConnection(string $group = 'default'): PDO
     {
         if (is_null(self::$connectionArray)) {
-            self::$connectionArray = ClassUtil::reflection(databaseConfig::class)->getStaticProperties() ?? [];
+            self::$connectionArray = Classic::reflection(databaseConfig::class)->getStaticProperties() ?? [];
         }
 
 

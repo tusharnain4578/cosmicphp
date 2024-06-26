@@ -82,7 +82,7 @@ class QueryBuilder
             'type' => 'OR',
             'column' => $column,
             'operator' => $operator,
-            'value' => ' ? '
+            'value' => $this->getWhereValueString(operator: $operator, value: $value)
         ];
         return $this;
     }
@@ -200,6 +200,18 @@ class QueryBuilder
     }
 
 
+
+
+    public function query(string $sql): bool|int
+    {
+        return $this->pdo->exec(statement: $sql);
+    }
+
+    public function tableExists(string $tableName)
+    {
+        $tableName = db_escape($tableName);
+        return $this->pdo->query("SHOW TABLES LIKE '$tableName';")->fetch() === false ? false : true;
+    }
 
     // Private Methods
 

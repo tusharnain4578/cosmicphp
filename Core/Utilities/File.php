@@ -52,4 +52,22 @@ class File
         return $fullPathArray;
     }
 
+    public static function getAllFilesInDirectory(string $directory, ?string $ext = null, bool $recursive = false): array
+    {
+        $result = [];
+        $dir = [$directory];
+
+        while (($currentDir = array_shift($dir)) && ($files = glob($currentDir . '/*'))) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    if (!$ext || pathinfo($file, PATHINFO_EXTENSION) === $ext)
+                        $result[] = $file;
+                } elseif ($recursive && is_dir($file))
+                    $dir[] = $file;
+            }
+        }
+
+        return $result;
+    }
+
 }

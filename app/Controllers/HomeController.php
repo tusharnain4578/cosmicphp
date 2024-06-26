@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use Core\Controller;
+use Core\Utilities\Rex;
 
 
 class HomeController extends Controller
@@ -13,7 +14,10 @@ class HomeController extends Controller
     }
     public function projects()
     {
-        return $this->response->view('projects');
+        if ($this->request->isPost())
+            return ['success' => true];
+
+        return view('projects');
     }
     public function contact()
     {

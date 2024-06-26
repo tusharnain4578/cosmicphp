@@ -16,4 +16,12 @@ class database
         'database' => 'testDb',
         'port' => 3306,
     ];
+
+    private static array $testDb = [
+        'hostname' => 'localhost',
+        'username' => 'admin',
+        'password' => 'Tushar@4578',
+        'database' => 'testDb2',
+        'port' => 3306,
+    ];
 }

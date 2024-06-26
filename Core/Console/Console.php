@@ -37,6 +37,16 @@ class Console
     }
 
 
+    public static function getArgFlagValue(int $argIndex, string $key, ?string $default = null): string|null
+    {
+        $arg = get_commandLine_arg(index: $argIndex);
+        if (!$arg || !($parts = explode('=', $arg)) || count($parts) !== 2 || $parts[0] !== $key)
+            return $default ?? null;
+        $value = trim($parts[1]);
+        return !empty($value) ? $value : ($default ?? null);
+    }
+
+
 
     /**
      * Used to take input from CLI

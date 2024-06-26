@@ -11,7 +11,5 @@ use Core\Router;
 
 $router->get('/', 'HomeController::index')->name('home');
 $router->get('/resume', 'HomeController::resume')->name('resume');
-$router->get('/projects', 'HomeController::projects')->name('projects');
+$router->match(['get', 'post'], '/projects', 'HomeController::projects')->name('projects');
 $router->get('/contact', 'HomeController::contact')->name('contact');
-
-

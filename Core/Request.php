@@ -3,7 +3,7 @@
 namespace Core;
 
 use Core\Console\CLI;
-use App\Config\request as requestConfig;
+use App\Config\UtilityConfig;
 
 class Request
 {
@@ -12,6 +12,7 @@ class Request
     private static Request $sharedRequest;
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
+    public const METHODS = ['GET', 'POST'];
     public const PHP_SAPI_CLI = 'cli';
     public const PHP_SAPI_CLI_SERVER = 'cli-server';
     public const DEFAULT_BASE_URL = 'http://localhost';
@@ -87,12 +88,12 @@ class Request
     {
         if (isset($key)) {
             $value = $_POST[$key] ?? $_GET[$key] ?? null;
-            return requestConfig::input_gate($value);
+            return UtilityConfig::request_input_gate($value);
         }
 
         $inputs = array_merge($_GET, $_POST);
         foreach ($inputs as $key => $value)
-            $inputs[$key] = requestConfig::input_gate($value);
+            $inputs[$key] = UtilityConfig::request_input_gate($value);
         return $inputs;
     }
 
@@ -101,10 +102,10 @@ class Request
     {
         if (isset($key)) {
             $value = $_GET[$key] ?? null;
-            return requestConfig::input_gate($value);
+            return UtilityConfig::request_input_gate($value);
         }
         foreach ($_GET as $key => $value)
-            $inputs[$key] = requestConfig::input_gate($value);
+            $inputs[$key] = UtilityConfig::request_input_gate($value);
         return $inputs;
     }
 
@@ -112,10 +113,10 @@ class Request
     {
         if (isset($key)) {
             $value = $_POST[$key] ?? null;
-            return requestConfig::input_gate($value);
+            return UtilityConfig::request_input_gate($value);
         }
         foreach ($_POST as $key => $value)
-            $inputs[$key] = requestConfig::input_gate($value);
+            $inputs[$key] = UtilityConfig::request_input_gate($value);
         return $inputs;
     }
 }

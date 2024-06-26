@@ -8,7 +8,7 @@ use Core\Interfaces\IMiddleware;
 use Core\Utilities\File;
 use Core\Utilities\Path;
 use Core\Utilities\Arr;
-use App\Config\router as routerConfig;
+use App\Config\UtilityConfig;
 
 class Router
 {
@@ -35,8 +35,8 @@ class Router
         $this->startingScriptUrl = $this->request->startingScriptUrl();
         $this->requestPath = $this->request->getUri();
 
-        if (defined(routerConfig::class . "::ROUTE_GROUP_NAME_SEPARATOR"))
-            $this->ROUTE_GROUP_NAME_SEPARATOR = routerConfig::ROUTE_GROUP_NAME_SEPARATOR;
+        if (defined(UtilityConfig::class . "::ROUTE_GROUP_NAME_SEPARATOR"))
+            $this->ROUTE_GROUP_NAME_SEPARATOR = UtilityConfig::ROUTE_GROUP_NAME_SEPARATOR;
 
     }
 
@@ -46,9 +46,27 @@ class Router
         return $this;
     }
 
-    public function post(string $path, $handler): self
+    public function post(string $path, $handler, array $routeOptions = []): self
     {
-        $this->addHandler(Request::METHOD_POST, $path, $handler);
+        $this->addHandler(Request::METHOD_POST, $path, $handler, $routeOptions);
+        return $this;
+    }
+
+    public function match(array $methods, string $path, $handler, array $routeOptions = []): self
+    {
+        if (empty($methods))
+            throw new \Exception("Methods array cannot be empty!");
+        $methods = array_map(function (string $method): string {
+            $method = strtoupper(trim($method));
+            if (empty($method))
+                throw new \Exception("Method can't be empty!");
+            if (!in_array($method, Request::METHODS))
+                throw new \Exception("Invalid method : '$method' provided");
+            return $method;
+        }, $methods);
+
+        $methods = array_map('trim', $methods);
+        $this->addHandler($methods, $path, $handler, $routeOptions);
         return $this;
     }
 
@@ -153,7 +171,7 @@ class Router
         } else {
             // will scan the application Router Directory to initalize router from all files
             // and populate the $this->routes array
-            $appRoutesPath = Path::appPath('Routes');
+            $appRoutesPath = Path::appPath($this->appRoutesDirectory);
             $routeFiles = File::scan_directory($appRoutesPath);
             foreach ($routeFiles as $file) {
                 (function () use ($appRoutesPath, $file) {
@@ -164,7 +182,7 @@ class Router
             // caching routes
             if (!empty($this->routes)) {
                 $cacheData = ['routes' => $this->routes, 'named_routes' => $this->namedRoutes, 'count' => $this->routesCount];
-                $phpFileContent = Arr::array_to_php_return_file_string($cacheData);
+                $phpFileContent = Arr::array_to_php_return_file_string($cacheData, minimized: true);
                 cache()->setPHPFileCache(filename: self::ROUTE_CACHE_PHP_FILE_NAME, content: $phpFileContent);
             }
         }
@@ -180,7 +198,10 @@ class Router
 
         foreach ($this->routes as $route) {
             $routePath = $route['path'];
-            if ($routePath === $this->requestPath && $route['method'] === $this->requestMethod) {
+            if (
+                $routePath === $this->requestPath &&
+                in_array($this->requestMethod, $route['methods'])
+            ) {
                 $targetRoute = $route;
                 break;
             }
@@ -194,7 +215,7 @@ class Router
     }
 
 
-    private function addHandler(string $method, string $path, $handler, array $routeOptions = []): void
+    private function addHandler(string|array $methods, string $path, $handler, array $routeOptions = []): void
     {
         $path = trim($path, '\/\ ');
 
@@ -211,9 +232,12 @@ class Router
             })();
         }
 
+        if (is_string($methods))
+            $methods = [$methods];
+
         $this->routes[] = [
             'path' => $path,
-            'method' => $method,
+            'methods' => $methods,
             'handler' => $handler,
             'middlewares' => []
         ];

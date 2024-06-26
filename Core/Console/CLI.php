@@ -4,7 +4,6 @@ namespace Core\Console;
 
 use Core\Database\Migration;
 use Core\Services\Cache;
-use Core\Utilities\Path;
 
 class CLI
 {
@@ -14,12 +13,8 @@ class CLI
     public function __construct($args = [])
     {
         $this->args = get_commandLine_arg();
-        $this->param = trim($this->args[0] ?? '');
+        $this->param = $this->args[0] ?? '';
 
-        if (!$this->param) {
-            Console::error(message: "Parameter Required!");
-            exit;
-        }
 
         Console::init();
     }
@@ -29,6 +24,22 @@ class CLI
     }
     public function run()
     {
+        Console::success(
+            sprintf(
+                'Buzz PHP - Command Line Tool - Server Time: %s UTC%s',
+                date('Y-m-d H:i:s'),
+                date('P')
+            )
+        );
+
+        $this->handleArguements();
+    }
+
+    private function handleArguements()
+    {
+        if (!$this->param)
+            return;
+
         if (str_starts_with($this->param, 'serve')) {
 
             self::runDevServer(); // script ends here
@@ -63,8 +74,7 @@ class CLI
     {
         $devServerBaseUrl = env('DEVELOPMENT_SERVER_BASE_URL', CLI::DEFAULT_DEV_SERVER_BASE_URL);
         $devServerBaseUrl = ltrim($devServerBaseUrl, '\http://\https://');
-        $path = FCPATH;
-        exec("php -S $devServerBaseUrl -t $path");
+        exec("php -S $devServerBaseUrl -t " . FCPATH);
     }
 
 

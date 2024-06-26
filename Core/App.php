@@ -3,9 +3,10 @@
 namespace Core;
 
 use Core\Console\CLI;
-use Core\Utilities\ClassUtil;
+use Core\Utilities\Classic;
 use Core\Utilities\Path;
 use App\Config\app as appConfig;
+use Core\Utilities\Rex;
 
 class App
 {
@@ -40,10 +41,13 @@ class App
 
     private function setupApplication()
     {
-        $this->appConfig = ClassUtil::reflection(appConfig::class)->getConstants();
-
         // First Loading .env file
         Autoload::loadEnv();
+
+        Rex::init(); // Initializing Date Config
+
+        $this->appConfig = Classic::reflection(appConfig::class)->getConstants();
+
 
         // Setup Autoload Files
         Autoload::loadAppHelpers();

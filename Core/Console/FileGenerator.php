@@ -5,6 +5,7 @@ namespace Core\Console;
 use Core\Exceptions\FileAlreadyExistsException;
 use Core\Utilities\File;
 use Core\Utilities\Path;
+use Core\Utilities\Rex;
 use Core\View;
 
 class FileGenerator
@@ -16,63 +17,95 @@ class FileGenerator
     private const DATA = [
         'migration' => ['namespace' => 'App\Database\Migrations', 'app_dir' => 'Database/Migrations'],
         'controller' => ['namespace' => 'App\Controllers', 'app_dir' => 'Controllers'],
+        'middleware' => ['namespace' => 'App\Middlewares', 'app_dir' => 'Middlewares'],
         'view' => ['app_dir' => View::TEMPLATE_DIRECTORY],
     ];
 
 
 
-    private static function createClassFile(string $name, string $fileType, string $ucFirstFileType)
+    private static function createFile(string $name, string $fileType, string $ucFirstFileType)
     {
-        $stub = self::getStubString($fileType);
 
-        $dir = self::DATA[$fileType]['app_dir'];
-        $nameParts = explode('/', $name);
+        $fileData = self::getFileData($name, $fileType);
 
-        $namespace = self::getFileNamespace($name, $fileType);
-
-        if ($namespace) {
-            $ext = '.php';
-            $className = array_pop($nameParts);
-            $fileContent = str_replace(['{{namespace}}', '{{classname}}'], [$namespace, $className], $stub);
-        } else {
-            $fileContent = str_replace('{{filename}}', $name, $stub);
-            $ext = View::TEMPLATE_EXTENSION;
-        }
-
-        $fullFilePath = Path::appPath("$dir/$name.$ext");
+        $filepath = Path::appPath($fileData['filepath']);
+        $filecontent = $fileData['filecontent'];
 
         try {
-            File::create($fullFilePath, $fileContent);
+
+            File::create($filepath, $filecontent);
+
         } catch (FileAlreadyExistsException $e) {
+
             Console::error("$ucFirstFileType : '$name' already exists!");
+
         }
     }
 
 
 
-
-    private static function getFileNamespace(string $name, string $fileType): string|null
+    private static function getFileData(string $name, string $fileType): array
     {
+        $dir = self::DATA[$fileType]['app_dir'];
+        $namespace = self::DATA[$fileType]['namespace'] ?? null;
+        $nameParts = explode('/', $name);
+        $className = array_pop($nameParts);
+        $stub = self::getStubString($fileType);
+
         switch ($fileType) {
             case 'migration': {
-                return self::DATA[$fileType]['namespace'];
+                $group = Console::getArgFlagValue(2, '--group', 'default');
+
+                if (!self::validateArg($group, 'migration:group'))
+                    throw new \InvalidArgumentException("Migration group : '$group' is in invalid format.");
+                $isDefault = $group === 'default';
+                $className = $isDefault ? $className : "{$group}_{$className}";
+                $groupField = $isDefault ? '' : "public string \$group = '$group';";
+                $filecontent = str_replace(
+                    ['{{namespace}}', '{{classname}}', '{{group_field}}'],
+                    [$namespace, $className, $groupField],
+                    $stub
+                );
+                $filename = $isDefault ? '' : "{$group}_";
+                $filename = $filename . Rex::timestamp() . "_$name.php";
+
+                return [
+                    'filepath' => "$dir/$filename",
+                    'filecontent' => $filecontent
+                ];
             }
+            case 'middleware':
             case 'controller': {
-                $namespace = self::DATA[$fileType]['namespace'];
-                if ($lastSlashPos = strrpos($name, '/')) {
-                    $appendNamespace = str_replace('/', '\\', substr($name, 0, $lastSlashPos));
-                    $namespace = $namespace .= "\\$appendNamespace";
-                }
-                return $namespace;
+                $filepath = "{$dir}/{$name}.php";
+                $namespace = self::getAppendedNamespace($namespace, $name);
+                $filecontent = str_replace(['{{namespace}}', '{{classname}}'], [$namespace, $className], $stub);
+                return [
+                    'filepath' => $filepath,
+                    'filecontent' => $filecontent
+                ];
             }
             case 'view': {
-                return null;
+                $nameWithExt = $name . View::TEMPLATE_EXTENSION;
+                return [
+                    'filepath' => "{$dir}/{$nameWithExt}",
+                    'filecontent' => str_replace('{{filename}}', $nameWithExt, $stub)
+                ];
             }
         }
 
         throw new \Exception("Invalid filetype : '$fileType'");
     }
 
+
+
+    private static function getAppendedNamespace(string $namespace, string $filename): string
+    {
+        if ($lastSlashPos = strrpos($filename, '/')) {
+            $appendNamespace = str_replace('/', '\\', substr($filename, 0, $lastSlashPos));
+            $namespace = $namespace .= "\\$appendNamespace";
+        }
+        return $namespace;
+    }
     private static function getStubString(string $name): string
     {
         $filePath = Path::frameworkPath("resources/stubs/$name.txt");
@@ -81,16 +114,21 @@ class FileGenerator
         return file_get_contents($filePath);
     }
 
-    private static function validateName(string $name, string $fileType): bool
+    private static function validateArg(string $name, string $fileType): bool
     {
         switch ($fileType) {
             case 'migration': {
                 if (!preg_match('/^[a-zA-Z][a-zA-Z_]*$/', $name))
                     return false;
             }
+            case 'migration:group': {
+                if (!preg_match('/^[a-zA-Z][a-zA-Z_]*[a-zA-Z]$/', $name))
+                    return false;
+            }
             case 'view':
+            case 'middleware':
             case 'controller': {
-                if (!preg_match('/^[a-zA-Z][a-zA-Z_\/]*[a-zA-Z]$/', $name))
+                if (!preg_match('/^[a-zA-Z](?:[a-zA-Z_\/]*[a-zA-Z])?$/', $name))
                     return false;
             }
         }
@@ -112,10 +150,9 @@ class FileGenerator
 
             $fileType = $parts[1];
 
-            if (!in_array($fileType, array_keys(self::DATA))) {
-                Console::error("Invalid file given to create.");
-                return;
-            }
+            if (!in_array($fileType, array_keys(self::DATA)))
+                throw new \Exception("Invalid file : '$fileType' given to create.");
+
 
             $ucFirstFileType = ucfirst($fileType);
 
@@ -124,12 +161,10 @@ class FileGenerator
                 errorMessage: "$ucFirstFileType name cannot be empty!"
             );
 
-            if (!self::validateName($name, $fileType)) {
-                Console::error("$ucFirstFileType Name : '$name' is invalid.");
-                return;
-            }
+            if (!self::validateArg($name, $fileType))
+                throw new \Exception("$ucFirstFileType : '$name' is invalid.");
 
-            self::createClassFile($name, $fileType, $ucFirstFileType);
+            self::createFile($name, $fileType, $ucFirstFileType);
 
 
         } else {

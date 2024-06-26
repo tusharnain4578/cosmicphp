@@ -76,3 +76,10 @@ function route(string $name): string
 {
     return app()->router->route($name);
 }
+
+function db_escape($input)
+{
+    // Use a regular expression to allow only alphanumeric characters, underscores, and hyphens
+    $sanitizedInput = preg_replace('/[^a-zA-Z0-9_-]/', '', $input);
+    return $sanitizedInput;
+}

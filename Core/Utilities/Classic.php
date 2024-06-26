@@ -4,7 +4,7 @@ namespace Core\Utilities;
 
 use ReflectionClass;
 
-class ClassUtil
+class Classic
 {
     private static array $reflections = [];
     public static function reflection(string $class): ReflectionClass

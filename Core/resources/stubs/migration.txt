@@ -1,19 +1,23 @@
 <?php
 
 namespace {{namespace}};
+use Core\Database\Migration;
 
-class {{classname}}
+/**
+ * up() and down() methods must return sql query string, which will get executed on running and
+ * rollbacking the migration
+ */
+class {{classname}} extends Migration
 {
-    public string $table = '';
-    public string $group = '';
+    {{group_field}}
 
-    public function up()
+    public function up(): string
     {
-
+        return "";
     }
 
-    public function down()
+    public function down(): string
     {
-
+        return "";
     }
 }
