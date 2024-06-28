@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use Core\Controller;
+use Core\Database\Operators;
 use Core\Utilities\Rex;
 
 
@@ -25,6 +26,7 @@ class HomeController extends Controller
     }
     public function index()
     {
+
         return view('home');
     }
 }

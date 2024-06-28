@@ -10,17 +10,17 @@ use stdClass;
 class QueryBuilder
 {
     private PDO $pdo;
-    private string $table;
-    private string|array $columns;
-    private array $wheres;
-    private array $selectPreparedData;
+    private string $table = '';
+    private string|array $columns = '*';
+    private array $wheres = [];
+    private array $preparedData = [];
+    private array $orderBy = [];
     private ?PDOStatement $selectStatement;
 
 
 
     private static array $sharedInstances = [];
 
-    const VALID_WHERE_OPERATORS = ['=', '<', '>', '<=', '>=', '!=', 'LIKE', 'NOT LIKE', 'BETWEEN', 'NOT BETWEEN', 'IN', 'NOT IN', 'IS NULL', 'IS NOT NULL', 'REGEXP'];
 
     public function __construct(string $group = 'default')
     {
@@ -28,14 +28,12 @@ class QueryBuilder
         if (!$pdo)
             throw new \Exception("Get null instead of PDO Object.");
         $this->pdo = $pdo;
-        $this->resetBuilder();
     }
 
     public static function getInstance(string $group = 'default', bool $shared = true): QueryBuilder
     {
-        if ($shared) {
+        if ($shared)
             return self::$sharedInstances[$group] ?? (self::$sharedInstances[$group] ??= new QueryBuilder(group: $group));
-        }
         return new QueryBuilder(group: $group);
     }
 
@@ -44,73 +42,121 @@ class QueryBuilder
         $this->table = '';
         $this->columns = '*';
         $this->wheres = [];
-        $this->selectPreparedData = [];
+        $this->preparedData = [];
+        $this->orderBy = [];
         $this->selectStatement = null;
     }
 
 
     public function table(string $table): self
     {
+        $this->resetBuilder();
         $this->table = $table;
         return $this;
     }
+
+
     public function select(string|array $columns = '*'): self
     {
         $this->columns = $columns;
         return $this;
     }
-    public function where(string $column, string $operator, null|string|int|float|array $value = null): self
+    public function where($column, $value): self
     {
-        $operator = trim(strtoupper($operator));
-        if (!in_array($operator, self::VALID_WHERE_OPERATORS))
-            throw new InvalidArgumentException("Invalid operator provided: $operator");
-
-        $this->wheres[] = [
-            'type' => 'AND',
-            'column' => $column,
-            'operator' => $operator,
-            'value' => $this->getWhereValueString(operator: $operator, value: $value)
-        ];
+        $this->handleWhere(column: $column, operator: Operators::EQUALS, value: $value);
         return $this;
     }
-    public function orWhere(string $column, string $operator, string|int|float|array $value): self
+    public function orWhere(string $column, $value): self
     {
-        if (!in_array($operator, self::VALID_WHERE_OPERATORS))
-            throw new InvalidArgumentException("Invalid operator provided: $operator");
-
-        $this->wheres[] = [
-            'type' => 'OR',
-            'column' => $column,
-            'operator' => $operator,
-            'value' => $this->getWhereValueString(operator: $operator, value: $value)
-        ];
+        $this->handleWhere(column: $column, operator: Operators::EQUALS, value: $value, type: Operators::OR );
         return $this;
     }
+    public function whereIn(string $column, array $valueList): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::IN, value: $valueList);
+        return $this;
+    }
+    public function orWhereIn(string $column, array $valueList): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::IN, value: $valueList, type: Operators::OR );
+        return $this;
+    }
+    public function whereNotIn(string $column, array $valueList): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::NOT_IN, value: $valueList);
+        return $this;
+    }
+    public function orWhereNotIn(string $column, array $valueList): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::NOT_IN, value: $valueList, type: Operators::OR );
+        return $this;
+    }
+    public function whereNot(string $column, string $value): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::NOT_EQUALS, value: $value);
+        return $this;
+    }
+    public function orWhereNot(string $column, string $value): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::NOT_EQUALS, value: $value, type: Operators::OR );
+        return $this;
+    }
+    public function whereBetween(string $column, string|int|float $start, string|int|float $end): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::BETWEEN, value: [$start, $end]);
+        return $this;
+    }
+    public function orWhereBetween(string $column, string|int|float $start, string|int|float $end): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::BETWEEN, value: [$start, $end], type: Operators::OR );
+        return $this;
+    }
+    public function whereNotBetween(string $column, string|int|float $start, string|int|float $end): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::NOT_BETWEEN, value: [$start, $end]);
+        return $this;
+    }
+    public function orWhereNotBetween(string $column, string|int|float $start, string|int|float $end): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::NOT_BETWEEN, value: [$start, $end], type: Operators::OR );
+        return $this;
+    }
+    public function whereNull(string $column): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::IS_NULL);
+        return $this;
+    }
+    public function whereNotNull(string $column): self
+    {
+        $this->handleWhere(column: $column, operator: Operators::IS_NOT_NULL);
+        return $this;
+    }
+    public function orderBy(string $column, string $direction): self
+    {
+        $direction = trim(strtoupper($direction));
+        if (!in_array($direction, [Operators::ORDER_DIRECTION_ASC, Operators::ORDER_DIRECTION_DESC]))
+            throw new InvalidArgumentException("Order BY Direction : '$direction' is not a valid direction");
+        $this->orderBy[] = ['column' => $column, 'direction' => $direction];
+        return $this;
+    }
+
     public function get(): self
     {
+        $this->__tableRequired();
+
         $fields = $this->_backtick($this->columns);
         $fields = $fields === "`*`" ? '*' : $fields;
 
-        $table = $this->_backtick($this->table);
-
-        $sql = 'SELECT ' . $fields
-            . ' FROM ' . $table;
-
-        if (!empty($this->wheres)) {
-            $sql .= ' WHERE ';
-            foreach ($this->wheres as $index => $where) {
-                $whereColumn = $this->_backtick($where['column']);
-                if ($index > 0)
-                    $sql .= $where['type'] . ' ';
-                $sql .= $whereColumn . ' ' . $where['operator'] . $where['value'];
-            }
-        }
+        $sql = "SELECT $fields FROM `$this->table`";
+        $sql .= $this->_getWhereString();
+        $sql .= $this->_getOrderByString();
 
         $this->selectStatement = $this->pdo->prepare($sql);
-        $this->selectStatement->execute($this->selectPreparedData);
+        $this->selectStatement->execute($this->preparedData);
 
         return $this;
     }
+
 
     /**
      * @return stdClass|null
@@ -119,9 +165,10 @@ class QueryBuilder
     {
         if ($this->selectStatement)
             return $this->selectStatement->fetch();
-        $this->resetBuilder();
         return null;
     }
+
+
 
     /**
      * @return stdClass[]
@@ -130,10 +177,18 @@ class QueryBuilder
     {
         if ($this->selectStatement)
             return $this->selectStatement->fetchAll();
-        $this->resetBuilder();
         return [];
     }
 
+
+    /**
+     * Returns all the records from the table
+     */
+    public function all($columns = '*'): array
+    {
+        $this->__tableRequired();
+        return $this->get()->result();
+    }
 
 
 
@@ -148,61 +203,64 @@ class QueryBuilder
      */
     public function insert(array $data, $returnId = false): int
     {
+        $this->__tableRequired();
         if (empty($data))
             throw new \Exception("Empty Dataset, Nothing to insert.");
 
-        $table = $this->_backtick($this->table);
         $columns = $this->_backtick(array_keys($data));
         $valuesArray = array_values($data);
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
-
-        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-
-        $statement = $this->pdo->prepare($sql);
-
-        $insertStatus = $statement->execute($valuesArray);
-
-        $this->resetBuilder();
-
+        $insertStatus = $this->pdo->prepare("INSERT INTO `$this->table` ($columns) VALUES ($placeholders)")->execute($valuesArray);
         if ($returnId)
             return $this->pdo->lastInsertId();
-
         return $insertStatus;
     }
 
 
     /**
-     * Updates a record by its id in the selected table
+     * Updates a record
+     * Usage Example : ->where()->update($data);
      */
-    public function updateById(int $id, array $data, string $idFieldName = 'id')
+    public function update(array $data): bool
     {
+        $this->__tableRequired();
         if (empty($data))
             throw new \Exception("Empty Dataset, Nothing to update.");
+        $this->_setPreparedData(array_values($data), prepend: true);
+        $setString = $this->_getUpdateSetString(data: $data);
+        $whereString = $this->_getWhereString();
+        return $this->pdo->prepare("UPDATE `$this->table` SET $setString $whereString")->execute($this->preparedData);
+    }
+    /**
+     * Updates a record by id primary key
+     */
+    public function updateById(int $id, array $data, string $idFieldName = 'id'): bool
+    {
+        $this->preparedData = [];
+        return $this->where($idFieldName, $id)->update($data);
+    }
 
-
-        $table = $this->_backtick($this->table);
-        $columnsArray = array_keys($data);
-        $valuesArray = array_values($data);
-        $idFieldName = $this->_backtick($idFieldName);
-
-        $setString = '';
-        foreach ($columnsArray as $column)
-            $setString .= "`$column` = ?, ";
-        $setString = rtrim($setString, '\ \,');
-
-        $sql = "UPDATE $table SET $setString WHERE $idFieldName = $id";
-
-        $statement = $this->pdo->prepare($sql);
-
-        $this->resetBuilder();
-
-        return $statement->execute($valuesArray);
+    /**
+     * Deletes a record
+     * Usage Example : ->where()->delete();
+     */
+    public function delete(): bool
+    {
+        $this->__tableRequired();
+        $whereString = $this->_getWhereString();
+        return $this->pdo->prepare("DELETE FROM `$this->table` $whereString")->execute($this->preparedData);
+    }
+    /**
+     * Deletes a record by its id, primary key
+     */
+    public function deleteById(int $id, string $idFieldName = 'id'): bool
+    {
+        $this->preparedData = [];
+        return $this->where($idFieldName, $id)->delete();
     }
 
 
-
-
-    public function query(string $sql): bool|int
+    public function execute(string $sql): bool|int
     {
         return $this->pdo->exec(statement: $sql);
     }
@@ -213,63 +271,115 @@ class QueryBuilder
         return $this->pdo->query("SHOW TABLES LIKE '$tableName';")->fetch() === false ? false : true;
     }
 
-    // Private Methods
 
+
+
+    // *****************************************************************
+    // PRIVATE METHODS
+    // *****************************************************************
+
+    private function handleWhere(string $column, string $operator, $value = null, string $type = Operators::AND )
+    {
+        $operator = $this->_getWhereOperator($operator, $value);
+        $this->wheres[] = [
+            'type' => $type,
+            'column' => $column,
+            'operator' => $operator,
+            'value' => Operators::getWherePlaceholder(operator: $operator, value: $value)
+        ];
+        if (!is_null($value))
+            $this->_setPreparedData($value);
+    }
+
+
+
+    private function _getWhereOperator($operator, $value): string
+    {
+        $op = $operator;
+        if (is_null($value)) {
+            if ($operator === Operators::EQUALS)
+                $op = Operators::IS_NULL;
+            else if ($operator === Operators::NOT_EQUALS)
+                $op = Operators::IS_NOT_NULL;
+        }
+
+        return trim($op);
+    }
 
 
     /**
-     * Helper Method for where clause
+     * Helper method to parse and set prepared data
      */
-    private function getWhereValueString(string $operator, null|string|int|float|array $value): string
+    private function _setPreparedData($value, bool $prepend = false)
     {
-
-        $resultString = '';
-
-        switch ($operator) {
-
-            case 'IS NULL':
-            case 'IS NOT NULL': {
-                $resultString = '';
-                $value = null;
-                break;
-            }
-
-            case 'BETWEEN':
-            case 'NOT BETWEEN ': {
-                if (is_null($value) || !is_array($value) || (count($value) != 2))
-                    throw new InvalidArgumentException("$operator Operator requires array of count 2.");
-                $resultString = ' ? AND ? ';
-                break;
-            }
-
-            case 'IN':
-            case 'NOT IN': {
-                if (is_null($value) || !is_array($value) or empty($value))
-                    throw new InvalidArgumentException("$operator Operator requires a non-empty array.");
-                $resultString = ' (' . trim(str_repeat(' ? , ', count($value)), '\,\ ') . ') ';
-                break;
-            }
-
-            default: {
-                if (is_null($value) || is_array($value))
-                    throw new InvalidArgumentException("$operator Operator requires int,float or string value.");
-                $resultString = ' ? ';
-                break;
-            }
-        }
-
         if (!is_null($value)) {
-            if (is_array($value)) {
-                foreach ($value as $val)
-                    $this->selectPreparedData[] = $val;
-            } else {
-                $this->selectPreparedData[] = $value;
+            if (!is_array($value))
+                $value = [$value];
+            foreach ($value as $val) {
+                if (is_bool($val))
+                    $val = ($val === true) ? 1 : 0;
+                else if (is_null($val))
+                    continue; // skipping null, because it will be set in placeholders
+                if ($prepend)
+                    array_unshift($this->preparedData, $val); // prepend to the beginning of the array
+                else
+                    $this->preparedData[] = $val; // append to the end of the array
             }
         }
-
-        return $resultString;
     }
 
+
+    /**
+     * Helper method to generate SET string for Updatethere 
+     * $data -> array [columng => value]
+     */
+    private function _getUpdateSetString(array $data): string
+    {
+        $setString = '';
+        foreach ($data as $column => $value) {
+            $column = trim($column);
+            $setString .= "`$column` = " .
+                (is_null($value) ? 'NULL' : '?') .
+                ', ';
+        }
+        return rtrim($setString, '\ \,');
+    }
+
+    /**
+     * Helper method generate where string from $this->wheres array
+     */
+    private function _getWhereString(): string
+    {
+        $sql = '';
+        if (!empty($this->wheres)) {
+            $sql .= ' WHERE ';
+            foreach ($this->wheres as $index => $where) {
+                $whereColumn = trim($where['column']);
+                if ($index > 0)
+                    $sql .= " {$where['type']} ";
+                $sql .= "`$whereColumn` {$where['operator']} {$where['value']}";
+            }
+        }
+        return $sql;
+    }
+    /**
+     * Helper method generate order by string
+     */
+    private function _getOrderByString(): string
+    {
+        $sql = '';
+        if (!empty($this->orderBy)) {
+            $sql .= ' ORDER BY ';
+            foreach ($this->orderBy as $index => $order) {
+                $column = trim($order['column']);
+                $direction = $order['direction'];
+                if ($index > 0)
+                    $sql .= ' ,';
+                $sql .= "`$column` $direction";
+            }
+        }
+        return $sql;
+    }
 
     /**
      * Helper method to wrap string in backticks for sql friendly strings
@@ -281,4 +391,14 @@ class QueryBuilder
         $data = array_map('trim', $data);
         return '`' . implode('`,`', $data) . '`';
     }
+
+
+
+
+    private function __tableRequired()
+    {
+        if (!$this->table || empty($this->table))
+            throw new \Exception("Table is not defined for database operation.");
+    }
 }
+

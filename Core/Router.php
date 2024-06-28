@@ -154,7 +154,7 @@ class Router
     {
         $routeIndex = $this->namedRoutes[$name] ?? null;
         if (is_null($routeIndex))
-            throw new \Exception("Route with name $name not found!");
+            throw new \Exception("Route with name '$name' not found!");
         $route = $this->routes[$routeIndex];
         return base_url($route['path']);
     }
