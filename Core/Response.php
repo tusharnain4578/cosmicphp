@@ -8,6 +8,13 @@ class Response
     public const RESPONSE_CONTENT_TYPE_HTML = 'text/html';
     public const RESPONSE_CONTENT_TYPE_JSON = 'application/json';
     private static string $contentType = self::RESPONSE_CONTENT_TYPE_HTML;
+    private static Response $sharedResponse;
+    public static function getInstance(bool $shared = false): Response
+    {
+        if ($shared)
+            return self::$sharedResponse ??= new Response;
+        return new Response;
+    }
 
     public function setContentType(string $type): void
     {
@@ -45,9 +52,6 @@ class Response
         header("location:$url");
         exit;
     }
-
-
-
 
     public function sendAndExit(mixed $data = null)
     {

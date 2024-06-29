@@ -2,6 +2,7 @@
 use Core\Database\DBConnection;
 use Core\Database\QueryBuilder;
 use Core\Request;
+use Core\Response;
 
 function dd(...$data)
 {
@@ -33,6 +34,10 @@ function env(string $name, mixed $default = null): mixed
 function request(bool $shared = true): Request
 {
     return Request::getInstance(shared: $shared);
+}
+function response(bool $shared = true): Response
+{
+    return Response::getInstance(shared: $shared);
 }
 
 function get_commandLine_arg(int $index = null)
@@ -72,9 +77,9 @@ function base_url(?string $relativeRoute = null): string
     return request()->getBaseUrl($relativeRoute);
 }
 
-function route(string $name): string
+function route(string $name, ...$params): string
 {
-    return app()->router->route($name);
+    return app()->router->route($name, ...$params);
 }
 
 function db_escape($input)

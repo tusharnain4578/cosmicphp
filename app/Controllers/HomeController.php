@@ -3,8 +3,8 @@
 namespace App\Controllers;
 
 use Core\Controller;
-use Core\Database\Operators;
-use Core\Utilities\Rex;
+use Core\Request;
+use Core\Response;
 
 
 class HomeController extends Controller
@@ -24,9 +24,19 @@ class HomeController extends Controller
     {
         return view('contact');
     }
-    public function index()
+    public function index(Request $request)
     {
-
         return view('home');
     }
+
+
+    public function json($name)
+    {
+        return [
+            'success' => true,
+            'name' => $name
+        ];
+    }
+
+
 }

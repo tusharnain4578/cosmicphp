@@ -9,7 +9,7 @@ abstract class Controller
 
     public function initController()
     {
-        $this->request = new Request;
-        $this->response = new Response;
+        $this->request = request();
+        $this->response = response();
     }
 }

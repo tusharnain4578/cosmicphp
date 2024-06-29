@@ -23,6 +23,18 @@ class Router
     private array $namedRoutes = []; // name(string) as key and routeIndex(int) as value
     private int $routesCount = 0;
     private array $currentGroup = []; // prefix(string) as key and options(array) as value
+    private array $placeholders = [
+        'any' => '.*',
+        'segment' => '[^/]+',
+        'alphanum' => '[a-zA-Z0-9]+',
+        'num' => '[0-9]+',
+        'alpha' => '[a-zA-Z]+',
+        'hash' => '[^/]+',
+        'alpha_num_spaces' => '[a-zA-Z0-9 ]+',
+        'alpha_spaces' => '[a-zA-Z ]+',
+        'slug' => '[a-zA-Z0-9_-]+',
+        'email' => '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    ];
     private string $ROUTE_GROUP_NAME_SEPARATOR = '.';
     public const ROUTE_CACHE_PHP_FILE_NAME = 'core_routes.php';
 
@@ -150,13 +162,28 @@ class Router
     /**
      * This method is for named routes
      */
-    public function route(string $name): string
+    public function route(string $name, ...$params): string
     {
         $routeIndex = $this->namedRoutes[$name] ?? null;
         if (is_null($routeIndex))
             throw new \Exception("Route with name '$name' not found!");
         $route = $this->routes[$routeIndex];
-        return base_url($route['path']);
+        $path = $route['path'];
+        // checking for parameters
+        preg_match_all('/\(([^)]+)\)/', $path, $matches);
+        $placeholders = $matches[0];
+        foreach ($placeholders as $index => $placeholder) {
+            if (!isset($params[$index])) {
+                throw new \InvalidArgumentException('Missing argument for "' . $placeholder . '" in route "' . $path . '".');
+            }
+            // placeholder is our regex
+            if (!preg_match('#^' . $placeholder . '$#u', $params[$index]))
+                throw new \Exception("Invalid parameter type!");
+            // the expected param type.
+            $pos = strpos($path, $placeholder);
+            $path = substr_replace($path, $params[$index], $pos, strlen($placeholder));
+        }
+        return base_url($path);
     }
 
     public function init()
@@ -195,20 +222,20 @@ class Router
     private function run(): void
     {
         $targetRoute = null;
-
+        $params = [];
         foreach ($this->routes as $route) {
-            $routePath = $route['path'];
             if (
-                $routePath === $this->requestPath &&
-                in_array($this->requestMethod, $route['methods'])
+                preg_match('#^' . $route['path'] . '$#u', $this->requestPath, $matches)
+                && in_array($this->requestMethod, $route['methods'])
             ) {
                 $targetRoute = $route;
+                array_shift($matches);
+                $params = $matches;
                 break;
             }
         }
-
         if ($targetRoute) {
-            $this->executeRoute($targetRoute);
+            $this->executeRoute($targetRoute, $params);
         } else {
             echo "NOT FOUND";
         }
@@ -218,6 +245,10 @@ class Router
     private function addHandler(string|array $methods, string $path, $handler, array $routeOptions = []): void
     {
         $path = trim($path, '\/\ ');
+
+        // adding placeholder in route with the corresponding regex
+        foreach ($this->placeholders as $tag => $pattern)
+            $path = str_ireplace(":$tag)", "$pattern)", $path);
 
         if (!empty($this->currentGroup)) {
             // applying group prefixes to route
@@ -279,7 +310,7 @@ class Router
 
 
 
-    private function executeRoute(array $route)
+    private function executeRoute(array $route, array $params = [])
     {
         $middlewares = array_map(function (string $middleware) {
             $middlewareObj = class_exists($middleware) ? new $middleware() : middlewareConfig::getMiddlewareFromAlias(alias: $middleware);
@@ -299,7 +330,11 @@ class Router
             $controller->initController();
             $callback = [$controller, $method];
         }
-        $controllerResult = call_user_func($callback);
+
+        // first route parameters will be injected, after then Request and Response Object.
+        $params = array_merge($params, [request(), response()]);
+        $controllerResult = call_user_func_array($callback, $params);
+
         $this->response->setResponseBody(data: $controllerResult); // setting the controller return into response
 
         // running middleware -> after

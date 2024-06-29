@@ -22,23 +22,31 @@ class Arr
 
                 if (is_array($value)) {
                     $valueString = $arrayToString($value, $level + 1);
-                    $content .= $minimized ? "{$keyString}=>$valueString," : "{$indent}{$keyString} => $valueString,\n";
+                    $content .= "{$indent}{$keyString} => {$valueString},";
                 } elseif (is_string($value)) {
                     $valueString = "'" . addslashes($value) . "'";
-                    $content .= $minimized ? "{$keyString}=>$valueString," : "{$indent}{$keyString} => $valueString,\n";
+                    $content .= "{$indent}{$keyString} => {$valueString},";
                 } elseif (is_numeric($value) || is_bool($value)) {
                     $valueString = var_export($value, true);
-                    $content .= $minimized ? "{$keyString}=>$valueString," : "{$indent}{$keyString} => $valueString,\n";
+                    $content .= "{$indent}{$keyString} => {$valueString},";
                 } else {
                     throw new \Exception("Invalid value during array parsing, only string, number, boolean, and array are allowed");
                 }
+
+                // Ensure each element ends with a newline if not minimized
+                if (!$minimized) {
+                    $content .= "\n";
+                }
             }
-            $content = rtrim($content, ",\n") . ($minimized ? "]" : str_repeat('    ', $level - 1) . "]");
+
+            // Trim trailing comma and add closing bracket
+            $content = rtrim($content, ",") . ($minimized ? "]" : str_repeat('    ', $level - 1) . "]");
             return $content;
         };
 
         $content = "<?php\n\nreturn " . $arrayToString($arr) . ";\n";
         return $content;
     }
+
 
 }
