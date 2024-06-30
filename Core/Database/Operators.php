@@ -29,6 +29,10 @@ class Operators
     const ORDER_DIRECTION_ASC = 'ASC';
     const ORDER_DIRECTION_DESC = 'DESC';
 
+    const JOIN = 'JOIN';
+    const LEFT_JOIN = 'LEFT JOIN';
+    const RIGHT_JOIN = 'RIGHT JOIN';
+
 
     public static function isValidWhereOperator(string $operator): bool
     {

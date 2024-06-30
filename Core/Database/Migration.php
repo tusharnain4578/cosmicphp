@@ -23,7 +23,7 @@ abstract class Migration
         // get migration logs from database
         $executedMigrations = $defaultDb->tableExists(self::MIGRATION_TABLE) ? $defaultDb->table(self::MIGRATION_TABLE)->all() : [];
         $executedMigrationsCount = count($executedMigrations);
-        $batch = $executedMigrationsCount === 0 ? 1 : $executedMigrations[$executedMigrationsCount - 1]->batch + 1;
+        $batch = $executedMigrationsCount === 0 ? 1 : $executedMigrations[$executedMigrationsCount - 1]['batch'] + 1;
         $migrationExecutedCount = 0;
         // Looping through app migrations
         foreach ($MigFileData as $filedata) {
@@ -39,7 +39,7 @@ abstract class Migration
                     // checking if already executed
                     $isExecutedBefore = (function () use (&$executedMigrations, &$filedata): bool{
                         foreach ($executedMigrations as &$mig) {
-                            if ($filedata['framework'] || ($mig->class === $filedata['class'] && $mig->group === $filedata['group']))
+                            if ($filedata['framework'] || ($mig['class'] === $filedata['class'] && $mig['group'] === $filedata['group']))
                                 return true;
                         }
                         return false;
@@ -51,7 +51,7 @@ abstract class Migration
                         // If this is app migration, only then we will log it+
                         db()->table(self::MIGRATION_TABLE)->insert([
                             'class' => $class,
-                            'group' => $filedata['group'],
+                            '`group`' => $filedata['group'],
                             'batch' => $batch,
                             'created_at' => Rex::now()
                         ]);
@@ -87,15 +87,15 @@ abstract class Migration
         foreach ($migrations as $migration) {
             if ($steps === 0)
                 break;
-            $class = $migration->class;
-            $dbGroup = $migration->group;
+            $class = $migration['class'];
+            $dbGroup = $migration['group'];
             $obj = new $class();
             if (method_exists($obj, method: 'down')) {
                 $query = trim($obj->down());
                 if (!is_string($query) || empty($query))
                     throw new \Exception("Migration : '$class' 'down()' method must return non-empty sql query!");
                 db($dbGroup)->execute($query);
-                $defaultDb->table(self::MIGRATION_TABLE)->deleteById($migration->id);
+                $defaultDb->table(self::MIGRATION_TABLE)->deleteById($migration['id']);
             }
             $steps--;
         }

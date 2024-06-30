@@ -26,22 +26,23 @@ class Router
     private array $placeholders = [
         'any' => '.*',
         'segment' => '[^/]+',
-        'alphanum' => '[a-zA-Z0-9]+',
-        'num' => '[0-9]+',
         'alpha' => '[a-zA-Z]+',
-        'hash' => '[^/]+',
-        'alpha_num_spaces' => '[a-zA-Z0-9 ]+',
+        'num' => '[0-9]+',
+        'alpha_num' => '[a-zA-Z0-9]+',
         'alpha_spaces' => '[a-zA-Z ]+',
+        'alpha_num_spaces' => '[a-zA-Z0-9 ]+',
+        'hash' => '[^/]+',
         'slug' => '[a-zA-Z0-9_-]+',
-        'email' => '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     ];
     private string $ROUTE_GROUP_NAME_SEPARATOR = '.';
-    public const ROUTE_CACHE_PHP_FILE_NAME = 'core_routes.php';
+
+    private const ROUTE_HANDLER_STRING_SEPARATOR = '@';
+    private const ROUTE_CACHE_PHP_FILE_NAME = 'core_routes.php';
 
     public function __construct()
     {
-        $this->request = new Request;
-        $this->response = new Response;
+        $this->request = request();
+        $this->response = response();
 
         $this->requestMethod = $this->request->method();
         $this->startingScriptUrl = $this->request->startingScriptUrl();
@@ -52,19 +53,19 @@ class Router
 
     }
 
-    public function get(string $path, $handler, array $routeOptions = []): self
+    public function get(string $path, string|array $handler, array $routeOptions = []): self
     {
         $this->addHandler(Request::METHOD_GET, $path, $handler, $routeOptions);
         return $this;
     }
 
-    public function post(string $path, $handler, array $routeOptions = []): self
+    public function post(string $path, string|array $handler, array $routeOptions = []): self
     {
         $this->addHandler(Request::METHOD_POST, $path, $handler, $routeOptions);
         return $this;
     }
 
-    public function match(array $methods, string $path, $handler, array $routeOptions = []): self
+    public function match(array $methods, string $path, string|array $handler, array $routeOptions = []): self
     {
         if (empty($methods))
             throw new \Exception("Methods array cannot be empty!");
@@ -242,7 +243,7 @@ class Router
     }
 
 
-    private function addHandler(string|array $methods, string $path, $handler, array $routeOptions = []): void
+    private function addHandler(string|array $methods, string $path, array|string $handler, array $routeOptions = []): void
     {
         $path = trim($path, '\/\ ');
 
@@ -269,7 +270,7 @@ class Router
         $this->routes[] = [
             'path' => $path,
             'methods' => $methods,
-            'handler' => $handler,
+            'handler' => is_string($handler) ? $this->getControllerFromString($handler) : $handler,
             'middlewares' => []
         ];
 
@@ -301,7 +302,7 @@ class Router
 
     private function getControllerFromString(string $callback): array
     {
-        $parts = explode(separator: '::', string: $callback);
+        $parts = explode(separator: self::ROUTE_HANDLER_STRING_SEPARATOR, string: $callback);
         $className = $parts[0];
         $actionMethod = $parts[1];
         $fullClassName = "\\{$this->controllerNamespace}\\{$className}";
@@ -323,16 +324,15 @@ class Router
         $this->executeMiddlewares($middlewares, type: 'before'); // this can stop the script, if some response is returned from any middleware
 
         // running controller
-        $callback = $route['handler'];
-        if (is_string($callback)) {
-            [$class, $method] = $this->getControllerFromString($callback);
-            $controller = new $class;
-            $controller->initController();
-            $callback = [$controller, $method];
-        }
+        [$class, $method] = $route['handler'];
+        // $this->getControllerFromString($callback)
+
+        $controller = new $class;
+        $controller->initController();
+        $callback = [$controller, $method]; // [object, method]
 
         // first route parameters will be injected, after then Request and Response Object.
-        $params = array_merge($params, [request(), response()]);
+        $params = array_merge($params, [$this->request, $this->response]);
         $controllerResult = call_user_func_array($callback, $params);
 
         $this->response->setResponseBody(data: $controllerResult); // setting the controller return into response

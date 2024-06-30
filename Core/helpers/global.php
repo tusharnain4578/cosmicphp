@@ -1,6 +1,6 @@
 <?php
 use Core\Database\DBConnection;
-use Core\Database\QueryBuilder;
+use Core\Database\DB;
 use Core\Request;
 use Core\Response;
 
@@ -16,6 +16,18 @@ function dd(...$data)
         }
     }
     die;
+}
+function d(...$data)
+{
+    foreach ($data as $dt) {
+        if (request()->isCli())
+            var_dump($dt);
+        else {
+            echo '<pre>';
+            echo var_dump($dt);
+            echo '</pre>';
+        }
+    }
 }
 
 function app(): \Core\App
@@ -57,9 +69,9 @@ function pdo_instance(string $group = 'default'): \PDO|null
     return DBConnection::pdo(name: $group);
 }
 
-function db(string $group = 'default', bool $shared = true): QueryBuilder
+function db(string $group = 'default', bool $shared = true): DB
 {
-    return QueryBuilder::getInstance(group: $group, shared: $shared);
+    return DB::getInstance(group: $group, shared: $shared);
 }
 
 function view(string $view, array $data = []): string

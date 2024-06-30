@@ -5,21 +5,25 @@ namespace Core\Database;
 use InvalidArgumentException;
 use PDO;
 use PDOStatement;
-use stdClass;
 
-class QueryBuilder
+class DB
 {
     private PDO $pdo;
     private string $table = '';
     private string|array $columns = '*';
-    private array $wheres = [];
+    private string $wheres = "";
+    private string $joins = "";
+    private string $groupBy = "";
+    private string $orderBy = "";
     private array $preparedData = [];
-    private array $orderBy = [];
     private ?PDOStatement $selectStatement;
+    private ?array $allowedFields = null;
+    private array $fetchMode = [PDO::FETCH_ASSOC];
 
 
 
     private static array $sharedInstances = [];
+
 
 
     public function __construct(string $group = 'default')
@@ -30,24 +34,32 @@ class QueryBuilder
         $this->pdo = $pdo;
     }
 
-    public static function getInstance(string $group = 'default', bool $shared = true): QueryBuilder
+    public static function getInstance(string $group = 'default', bool $shared = true): DB
     {
         if ($shared)
-            return self::$sharedInstances[$group] ?? (self::$sharedInstances[$group] ??= new QueryBuilder(group: $group));
-        return new QueryBuilder(group: $group);
+            return self::$sharedInstances[$group] ?? (self::$sharedInstances[$group] ??= new DB(group: $group));
+        return new DB(group: $group);
     }
 
     public function resetBuilder()
     {
         $this->table = '';
         $this->columns = '*';
-        $this->wheres = [];
+        $this->wheres = "";
+        $this->joins = "";
+        $this->groupBy = "";
+        $this->orderBy = "";
         $this->preparedData = [];
-        $this->orderBy = [];
         $this->selectStatement = null;
+        $this->fetchMode = [PDO::FETCH_ASSOC];
     }
 
 
+    public function setFetchMode($mode): self
+    {
+        $this->fetchMode = $mode;
+        return $this;
+    }
     public function table(string $table): self
     {
         $this->resetBuilder();
@@ -61,14 +73,23 @@ class QueryBuilder
         $this->columns = $columns;
         return $this;
     }
-    public function where($column, $value): self
+    public function where(string $column, mixed $operator, mixed $value = null): self
     {
-        $this->handleWhere(column: $column, operator: Operators::EQUALS, value: $value);
+        if (func_num_args() == 2) {
+            $value = $operator;
+            $operator = Operators::EQUALS;
+        }
+
+        $this->handleWhere($column, $operator, $value);
         return $this;
     }
-    public function orWhere(string $column, $value): self
+    public function orWhere(string $column, mixed $operator, mixed $value = null): self
     {
-        $this->handleWhere(column: $column, operator: Operators::EQUALS, value: $value, type: Operators::OR );
+        if (func_num_args() == 2) {
+            $value = $operator;
+            $operator = Operators::EQUALS;
+        }
+        $this->handleWhere($column, $operator, $value, type: Operators::OR );
         return $this;
     }
     public function whereIn(string $column, array $valueList): self
@@ -91,12 +112,12 @@ class QueryBuilder
         $this->handleWhere(column: $column, operator: Operators::NOT_IN, value: $valueList, type: Operators::OR );
         return $this;
     }
-    public function whereNot(string $column, string $value): self
+    public function whereNot(string $column, $value): self
     {
         $this->handleWhere(column: $column, operator: Operators::NOT_EQUALS, value: $value);
         return $this;
     }
-    public function orWhereNot(string $column, string $value): self
+    public function orWhereNot(string $column, $value): self
     {
         $this->handleWhere(column: $column, operator: Operators::NOT_EQUALS, value: $value, type: Operators::OR );
         return $this;
@@ -136,7 +157,20 @@ class QueryBuilder
         $direction = trim(strtoupper($direction));
         if (!in_array($direction, [Operators::ORDER_DIRECTION_ASC, Operators::ORDER_DIRECTION_DESC]))
             throw new InvalidArgumentException("Order BY Direction : '$direction' is not a valid direction");
-        $this->orderBy[] = ['column' => $column, 'direction' => $direction];
+        $isFirst = empty($this->orderBy);
+        $this->orderBy .= $isFirst ? ' ORDER BY ' : '';
+        $this->orderBy .= !$isFirst ? ', ' : '';
+        $this->orderBy .= " `$column` $direction ";
+        return $this;
+    }
+    public function join(string $table, string $condition, string $joinType = Operators::JOIN): self
+    {
+        $this->joins .= " $joinType `$table` ON $condition ";
+        return $this;
+    }
+    public function groupBy(string $groupBy): self
+    {
+        $this->groupBy = " GROUP BY $groupBy ";
         return $this;
     }
 
@@ -144,40 +178,50 @@ class QueryBuilder
     {
         $this->__tableRequired();
 
-        $fields = $this->_backtick($this->columns);
+        $fields = $this->_getSelectColumnString($this->columns);
         $fields = $fields === "`*`" ? '*' : $fields;
 
         $sql = "SELECT $fields FROM `$this->table`";
-        $sql .= $this->_getWhereString();
-        $sql .= $this->_getOrderByString();
-
+        $sql .= $this->wheres;
+        $sql .= $this->joins;
+        $sql .= $this->orderBy;
+        $sql .= $this->groupBy;
+        d($sql);
         $this->selectStatement = $this->pdo->prepare($sql);
         $this->selectStatement->execute($this->preparedData);
-
+        $this->selectStatement->setFetchMode(...$this->fetchMode);
         return $this;
     }
 
 
     /**
-     * @return stdClass|null
+     * @return array|null
      */
-    public function row(): stdClass|null
+    public function row()
     {
-        if ($this->selectStatement)
-            return $this->selectStatement->fetch();
-        return null;
+        if ($this->selectStatement) {
+            $data = $this->selectStatement->fetch();
+            if (!$data || ($data === false))
+                return null;
+        }
+        if (is_object($data) && property_exists($data, 'exists'))
+            $data->exists = true;
+        return $data;
     }
 
 
 
     /**
-     * @return stdClass[]
+     * @return array[]
      */
     public function result(): array
     {
+        $data = [];
         if ($this->selectStatement)
-            return $this->selectStatement->fetchAll();
-        return [];
+            $data = $this->selectStatement->fetchAll();
+        if (!empty($data) && is_object($data[0]) && property_exists($data[0], 'exists'))
+            array_map(fn($dt) => $dt->exists = true, $data);
+        return $data;
     }
 
 
@@ -190,6 +234,11 @@ class QueryBuilder
         return $this->get()->result();
     }
 
+    public function findById($id, $primaryKey = 'id')
+    {
+        $this->__tableRequired();
+        return $this->where($primaryKey, $id)->get()->row() ?? null;
+    }
 
 
 
@@ -207,7 +256,7 @@ class QueryBuilder
         if (empty($data))
             throw new \Exception("Empty Dataset, Nothing to insert.");
 
-        $columns = $this->_backtick(array_keys($data));
+        $columns = $this->_getSelectColumnString(array_keys($data));
         $valuesArray = array_values($data);
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
         $insertStatus = $this->pdo->prepare("INSERT INTO `$this->table` ($columns) VALUES ($placeholders)")->execute($valuesArray);
@@ -228,8 +277,7 @@ class QueryBuilder
             throw new \Exception("Empty Dataset, Nothing to update.");
         $this->_setPreparedData(array_values($data), prepend: true);
         $setString = $this->_getUpdateSetString(data: $data);
-        $whereString = $this->_getWhereString();
-        return $this->pdo->prepare("UPDATE `$this->table` SET $setString $whereString")->execute($this->preparedData);
+        return $this->pdo->prepare("UPDATE `$this->table` SET $setString $this->wheres")->execute($this->preparedData);
     }
     /**
      * Updates a record by id primary key
@@ -247,8 +295,7 @@ class QueryBuilder
     public function delete(): bool
     {
         $this->__tableRequired();
-        $whereString = $this->_getWhereString();
-        return $this->pdo->prepare("DELETE FROM `$this->table` $whereString")->execute($this->preparedData);
+        return $this->pdo->prepare("DELETE FROM `$this->table` $this->wheres")->execute($this->preparedData);
     }
     /**
      * Deletes a record by its id, primary key
@@ -274,19 +321,41 @@ class QueryBuilder
 
 
 
+    public function transaction(callable $func)
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $func(); // use only this pdo inside the transaction call back
+            if (!$this->pdo->inTransaction())
+                throw new \Exception("Transaction ended prematurely");
+            $this->pdo->commit();
+        } catch (\Exception $e) {
+            if ($this->pdo->inTransaction())
+                $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+
+
+
     // *****************************************************************
     // PRIVATE METHODS
     // *****************************************************************
 
+
+
     private function handleWhere(string $column, string $operator, $value = null, string $type = Operators::AND )
     {
+        $column = trim($column);
         $operator = $this->_getWhereOperator($operator, $value);
-        $this->wheres[] = [
-            'type' => $type,
-            'column' => $column,
-            'operator' => $operator,
-            'value' => Operators::getWherePlaceholder(operator: $operator, value: $value)
-        ];
+        $placeholder = Operators::getWherePlaceholder(operator: $operator, value: $value);
+        $isFirst = empty($this->wheres);
+
+        $this->wheres .= $isFirst ? " WHERE " : '';
+        $this->wheres .= !$isFirst ? $type : '';
+        $this->wheres .= " $column $operator $placeholder ";
+
         if (!is_null($value))
             $this->_setPreparedData($value);
     }
@@ -329,6 +398,14 @@ class QueryBuilder
     }
 
 
+    private function _getSelectColumnString(string|array $columns): string
+    {
+        if (is_string($columns))
+            $columns = explode(',', $columns);
+        $columns = array_map('trim', $columns);
+        return implode(', ', $columns);
+    }
+
     /**
      * Helper method to generate SET string for Updatethere 
      * $data -> array [columng => value]
@@ -345,52 +422,6 @@ class QueryBuilder
         return rtrim($setString, '\ \,');
     }
 
-    /**
-     * Helper method generate where string from $this->wheres array
-     */
-    private function _getWhereString(): string
-    {
-        $sql = '';
-        if (!empty($this->wheres)) {
-            $sql .= ' WHERE ';
-            foreach ($this->wheres as $index => $where) {
-                $whereColumn = trim($where['column']);
-                if ($index > 0)
-                    $sql .= " {$where['type']} ";
-                $sql .= "`$whereColumn` {$where['operator']} {$where['value']}";
-            }
-        }
-        return $sql;
-    }
-    /**
-     * Helper method generate order by string
-     */
-    private function _getOrderByString(): string
-    {
-        $sql = '';
-        if (!empty($this->orderBy)) {
-            $sql .= ' ORDER BY ';
-            foreach ($this->orderBy as $index => $order) {
-                $column = trim($order['column']);
-                $direction = $order['direction'];
-                if ($index > 0)
-                    $sql .= ' ,';
-                $sql .= "`$column` $direction";
-            }
-        }
-        return $sql;
-    }
-
-    /**
-     * Helper method to wrap string in backticks for sql friendly strings
-     */
-    private function _backtick(string|array $data): string
-    {
-        if (is_string($data))
-            $data = explode(',', $data);
-        $data = array_map('trim', $data);
-        return '`' . implode('`,`', $data) . '`';
-    }
 
 
 

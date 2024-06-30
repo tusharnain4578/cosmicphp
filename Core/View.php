@@ -74,8 +74,7 @@ class View
 
         $viewContent = (function () use ($viewFilePath, $data): string{
             try {
-                foreach ($data as $varName => $varValue)
-                    ${$varName} = $varValue;
+                extract($data);
                 ob_start();
                 require_once $viewFilePath;
                 return ob_get_clean();
