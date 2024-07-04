@@ -36,10 +36,10 @@ abstract class Model
     protected static array $fillable = [];
     protected static string $createdField;
     protected static string $updatedField;
-    protected array $attributes = [];
     private static array $dbInstances = [];
 
     // Non static properties
+    protected array $attributes = [];
     public bool $exists = false;
 
     public function updateObject(Model $obj)
@@ -78,12 +78,23 @@ abstract class Model
     }
     public function save(): bool
     {
-        $obj = self::create($this->attributes, true);
-        $this->put($obj);
-        return !!$obj;
+        if($this->exists)
+        {
+            if(!isset($this->attributes[static::$primaryKey]))
+                throw new \Exception("Primary key must exist in model object for the update!");
+            return self::table()->updateById($this->attributes[static::$primaryKey], $this->attributes, static::$primaryKey);
+        }
+        return self::create($this->attributes) && ($this->exists = true);
     }
 
-
+    public function delete():bool
+    {
+        if(!$this->exists)
+            throw new \Exception("Record doesn't exists in the database yet!");
+        if(!isset($this->attributes[static::$primaryKey]))
+            throw new \Exception("Primary key must exist in model object for the deletion!");
+        return self::table()->deleteById($this->attributes[static::$primaryKey], static::$primaryKey);
+    }
 
 
 
@@ -104,10 +115,12 @@ abstract class Model
     /**
      * @return static|null
      */
-    public static function find(int|string $id): static|null
+    public static function find(int|string $id, string|array $columns = '*'): static|null
     {
-        return self::table()->findById($id, static::$primaryKey);
+        return self::table()->findById($id, $columns, static::$primaryKey);
     }
+
+    
 
     public static function create(array $data, bool $returnObject = false)
     {
@@ -129,7 +142,7 @@ abstract class Model
     }
 
 
-    public static function table(): DB
+    private static function table(): DB
     {
         $modelClass = get_called_class();
         if (!isset(self::$dbInstances[$modelClass]))
@@ -137,4 +150,5 @@ abstract class Model
         return self::$dbInstances[$modelClass]->table(static::$table)
             ->setFetchMode([\PDO::FETCH_CLASS, $modelClass]);
     }
+
 }

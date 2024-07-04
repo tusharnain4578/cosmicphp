@@ -186,7 +186,7 @@ class DB
         $sql .= $this->joins;
         $sql .= $this->orderBy;
         $sql .= $this->groupBy;
-        d($sql);
+
         $this->selectStatement = $this->pdo->prepare($sql);
         $this->selectStatement->execute($this->preparedData);
         $this->selectStatement->setFetchMode(...$this->fetchMode);
@@ -234,10 +234,10 @@ class DB
         return $this->get()->result();
     }
 
-    public function findById($id, $primaryKey = 'id')
+    public function findById($id, string|array $columns = '*', string $primaryKey = 'id')
     {
         $this->__tableRequired();
-        return $this->where($primaryKey, $id)->get()->row() ?? null;
+        return $this->select($columns)->where($primaryKey, $id)->get()->row() ?? null;
     }
 
 
@@ -275,7 +275,7 @@ class DB
         $this->__tableRequired();
         if (empty($data))
             throw new \Exception("Empty Dataset, Nothing to update.");
-        $this->_setPreparedData(array_values($data), prepend: true);
+        $this->_setPreparedData(array_reverse(array_values($data)), prepend: true);
         $setString = $this->_getUpdateSetString(data: $data);
         return $this->pdo->prepare("UPDATE `$this->table` SET $setString $this->wheres")->execute($this->preparedData);
     }
