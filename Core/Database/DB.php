@@ -10,7 +10,7 @@ class DB
 {
     private PDO $pdo;
     private string $table = '';
-    private string|array $columns = '*';
+    private string $columns = '';
     private string $wheres = "";
     private string $joins = "";
     private string $groupBy = "";
@@ -30,7 +30,7 @@ class DB
     {
         $pdo = pdo_instance(group: $group);
         if (!$pdo)
-            throw new \Exception("Get null instead of PDO Object.");
+            throw new \Exception("Got null instead of PDO Object.");
         $this->pdo = $pdo;
     }
 
@@ -44,7 +44,7 @@ class DB
     public function resetBuilder()
     {
         $this->table = '';
-        $this->columns = '*';
+        $this->columns = '';
         $this->wheres = "";
         $this->joins = "";
         $this->groupBy = "";
@@ -70,7 +70,7 @@ class DB
 
     public function select(string|array $columns = '*'): self
     {
-        $this->columns = $columns;
+        $this->columns .= (!empty($this->columns) ? ', ' : '') . $this->_getSelectColumnString($columns);
         return $this;
     }
     public function where(string $column, mixed $operator, mixed $value = null): self
@@ -178,18 +178,18 @@ class DB
     {
         $this->__tableRequired();
 
-        $fields = $this->_getSelectColumnString($this->columns);
-        $fields = $fields === "`*`" ? '*' : $fields;
+        $fields = empty($this->columns) ? '*' : $this->columns;
 
         $sql = "SELECT $fields FROM `$this->table`";
         $sql .= $this->wheres;
         $sql .= $this->joins;
         $sql .= $this->orderBy;
         $sql .= $this->groupBy;
-
+        // dd($sql);
         $this->selectStatement = $this->pdo->prepare($sql);
         $this->selectStatement->execute($this->preparedData);
         $this->selectStatement->setFetchMode(...$this->fetchMode);
+
         return $this;
     }
 

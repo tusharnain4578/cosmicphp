@@ -23,6 +23,7 @@ use Core\Utilities\Rex;
  * @method QueryBuilder whereNull(string $column)
  * @method QueryBuilder whereNotNull(string $column)
  * @method QueryBuilder orderBy(string $column, string $direction)
+ * @method QueryBuilder join(string $table, string $condition, string $joinType = Operators::JOIN)
  * @method QueryBuilder get()
  * @method array|null row()
  * @method array result()
@@ -52,7 +53,7 @@ abstract class Model
         foreach (['get' . ucfirst($name) . 'Attribute', 'get_' . $name . '_attribute'] as &$a)
             if (method_exists($this, method: $a))
                 return $this->$a();
-        return $this->attributes[$name] ?? null;
+        return $this->attributes[$name] ??= (method_exists($this, method: $name) ? $this->$name() : null);
     }
     public function __set($name, $value)
     {
@@ -78,30 +79,47 @@ abstract class Model
     }
     public function save(): bool
     {
-        if($this->exists)
-        {
-            if(!isset($this->attributes[static::$primaryKey]))
+        if ($this->exists) {
+            if (!isset($this->attributes[static::$primaryKey]))
                 throw new \Exception("Primary key must exist in model object for the update!");
             return self::table()->updateById($this->attributes[static::$primaryKey], $this->attributes, static::$primaryKey);
         }
         return self::create($this->attributes) && ($this->exists = true);
     }
 
-    public function delete():bool
+    public function delete(): bool
     {
-        if(!$this->exists)
+        if (!$this->exists)
             throw new \Exception("Record doesn't exists in the database yet!");
-        if(!isset($this->attributes[static::$primaryKey]))
+        if (!isset($this->attributes[static::$primaryKey]))
             throw new \Exception("Primary key must exist in model object for the deletion!");
         return self::table()->deleteById($this->attributes[static::$primaryKey], static::$primaryKey);
     }
 
 
+    public function hasOne(string $relatedModel, string $foreignKey): Model|null
+    {
+        if (!isset($this->attributes[static::$primaryKey]))
+            throw new \Exception("Primary key must exist in model object for relation setup!");
+        return $relatedModel::where($foreignKey, $this->attributes[static::$primaryKey])->get()->row();
+    }
+    public function hasMany(string $relatedModel, string $foreignKey): array
+    {
+        if (!isset($this->attributes[static::$primaryKey]))
+            throw new \Exception("Primary key must exist in model object for relation setup!");
+        return $relatedModel::where($foreignKey, $this->attributes[static::$primaryKey])->get()->result();
+    }
+    public function belongsTo(string $relatedModel, string $foreignKey): Model|null
+    {
+        if (!isset($this->attributes[static::$primaryKey]))
+            throw new \Exception("Primary key must exist in model object for relation setup!");
+        return $relatedModel::where($relatedModel::$primaryKey, $this->attributes[$foreignKey])->get()->row();
+    }
 
-
-
-
-
+    public function toArray(): array
+    {
+        return $this->attributes;
+    }
 
 
     /**
@@ -112,6 +130,7 @@ abstract class Model
         return self::table()->all($columns);
     }
 
+
     /**
      * @return static|null
      */
@@ -120,7 +139,7 @@ abstract class Model
         return self::table()->findById($id, $columns, static::$primaryKey);
     }
 
-    
+
 
     public static function create(array $data, bool $returnObject = false)
     {

@@ -14,6 +14,14 @@ class User extends Model
 
 
 
+    public function wallet(): Wallet|null
+    {
+        return $this->hasOne(Wallet::class, 'user_id');
+    }
 
+    public function posts(): array
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
 
 }

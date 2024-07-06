@@ -10,10 +10,10 @@ class database
 {
     // a default connection must be in the list
     private static array $default = [
-        'hostname' => 'localhost',
-        'username' => 'u938831575_tusharnain',
-        'password' => 'Tusharnain@4578',
-        'database' => 'u938831575_tusharnain',
+        'hostname' => '',
+        'username' => '',
+        'password' => '',
+        'database' => '',
         'port' => 3306,
     ];
 }

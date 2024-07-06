@@ -10,12 +10,27 @@ use App\Models\Wallet;
 class DevController extends Controller
 {
 
-    
+
     public function index()
     {
 
+        $data = User::all();
+
+        $user = User::find(2);
 
 
-        return ['success'=> true, 'message'=> 'Dev'];
+
+        dd($user->posts);
+
+
+
+
+
+        // to array
+        $attributes = [];
+        foreach ($data as $dt)
+            $attributes[] = $dt->toArray();
+
+        return ['success' => true, 'message' => $attributes];
     }
 }

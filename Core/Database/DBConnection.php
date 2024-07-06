@@ -2,11 +2,9 @@
 
 namespace Core\Database;
 
-use Core\Console\Console;
 use Core\Utilities\Classic;
 use App\Config\database as databaseConfig;
 use \PDO;
-use PDOException;
 
 abstract class DBConnection
 {
@@ -40,11 +38,13 @@ abstract class DBConnection
 
             $connection = self::$connectionArray[$group];
 
-            $host = $connection['hostname'];
-            $username = $connection['username'];
-            $database = $connection['database'];
-            $password = $connection['password'];
-            $dsn = "mysql:host=$host;dbname=$database;charset=utf8mb4";
+            $host = env("db.$group.hostname") ?? $connection['hostname'];
+            $username = env("db.$group.username") ?? $connection['username'];
+            $database = env("db.$group.database") ?? $connection['database'];
+            $password = env("db.$group.password") ?? $connection['password'];
+            $port = env("db.$group.port") ?? $connection['port'] ?? 3306;
+            $charset = 'utf8mb4';
+            $dsn = "mysql:host=$host;port=$port;dbname=$database;charset=$charset";
 
             return new PDO($dsn, $username, $password, self::PDO_OPTIONS);
 
