@@ -4,12 +4,15 @@ namespace Core;
 
 use Core\Console\CLI;
 use App\Config\UtilityConfig;
+use Core\Services\Session;
+use Core\Validator\Validator;
 
 class Request
 {
     private ?string $uri = null;
     private static ?string $baseUrl = null;
     private static Request $sharedRequest;
+    public Session $session;
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
     public const METHODS = ['GET', 'POST'];
@@ -17,13 +20,18 @@ class Request
     public const PHP_SAPI_CLI_SERVER = 'cli-server';
     public const DEFAULT_BASE_URL = 'http://localhost';
 
+
+    public function __construct()
+    {
+        $this->session = session();
+    }
+
     public static function getInstance(bool $shared = false): Request
     {
         if ($shared)
             return self::$sharedRequest ??= new Request;
         return new Request;
     }
-
 
     public function method(): string
     {
@@ -118,5 +126,12 @@ class Request
         foreach ($_POST as $key => $value)
             $inputs[$key] = UtilityConfig::request_input_gate($value);
         return $inputs;
+    }
+
+    public function validator(): Validator
+    {
+        $validator = new Validator;
+        $validator->data([...$_GET, ...$_POST]);
+        return $validator;
     }
 }

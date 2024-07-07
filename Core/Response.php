@@ -53,14 +53,13 @@ class Response
         exit;
     }
 
-    public function sendAndExit(mixed $data = null)
+    public function send(mixed $data = null)
     {
         if ($data)
             $this->setResponseBody($data);
 
         header('Content-Type: ' . self::$contentType);
         echo self::$responseBody;
-        exit;
     }
 
     public function setResponseBody(string|array|Response $data): self

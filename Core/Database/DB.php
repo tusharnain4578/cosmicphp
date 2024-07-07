@@ -185,7 +185,6 @@ class DB
         $sql .= $this->joins;
         $sql .= $this->orderBy;
         $sql .= $this->groupBy;
-        // dd($sql);
         $this->selectStatement = $this->pdo->prepare($sql);
         $this->selectStatement->execute($this->preparedData);
         $this->selectStatement->setFetchMode(...$this->fetchMode);

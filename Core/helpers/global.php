@@ -84,6 +84,11 @@ function cache(bool $shared = true): \Core\Services\Cache
     return \Core\Services\Cache::getInstance(shared: $shared);
 }
 
+function session(): \Core\Services\Session
+{
+    return \Core\Services\Session::getInstance();
+}
+
 function base_url(?string $relativeRoute = null): string
 {
     return request()->getBaseUrl($relativeRoute);

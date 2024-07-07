@@ -3,6 +3,7 @@
 namespace Core;
 
 use Core\Console\CLI;
+use Core\Services\Session;
 use Core\Utilities\Classic;
 use Core\Utilities\Path;
 use App\Config\app as appConfig;
@@ -44,10 +45,12 @@ class App
         // First Loading .env file
         Autoload::loadEnv();
 
+        // Initializing session
+        session();
+
         Rex::init(); // Initializing Date Config
 
         $this->appConfig = Classic::reflection(appConfig::class)->getConstants();
-
 
         // Setup Autoload Files
         Autoload::loadAppHelpers();
@@ -60,6 +63,7 @@ class App
             if (!isset($this->router))
                 ($this->router = new Router())->init();
         }
+
     }
 
     public function run()

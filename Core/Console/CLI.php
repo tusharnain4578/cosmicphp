@@ -63,11 +63,9 @@ class CLI
         }
     }
 
-    public static function invalidParamMessage($message = 'Invalid Parameter!', bool $exit = true)
+    public static function invalidParamMessage($message = 'Invalid Parameter!')
     {
         Console::error(message: $message);
-        if ($exit)
-            exit;
     }
 
     private static function runDevServer()

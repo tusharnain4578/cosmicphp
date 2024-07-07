@@ -340,7 +340,7 @@ class Router
         // running middleware -> after
         $this->executeMiddlewares($middlewares, type: 'after'); // this can stop the script, if some response is returned from any middleware
 
-        $this->response->sendAndExit();
+        $this->response->send();
     }
     private function executeMiddlewares(array $middlewares, string $type)
     {
@@ -349,7 +349,7 @@ class Router
         foreach ($middlewares as $middleware) {
             $returnResponse = $middleware->$type(request: $this->request, response: $this->response);
             if ($returnResponse instanceof Response)
-                $returnResponse->sendAndExit(); // script will end here
+                $returnResponse->send(); // script will end here
         }
     }
 }

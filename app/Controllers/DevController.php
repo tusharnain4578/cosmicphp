@@ -3,34 +3,16 @@
 namespace App\Controllers;
 
 use Core\Controller;
-use App\Models\User;
-use App\Models\Wallet;
+use Core\Request;
 
 
 class DevController extends Controller
 {
 
 
-    public function index()
+    public function index(Request $request)
     {
 
-        $data = User::all();
-
-        $user = User::find(2);
-
-
-
-        dd($user->posts);
-
-
-
-
-
-        // to array
-        $attributes = [];
-        foreach ($data as $dt)
-            $attributes[] = $dt->toArray();
-
-        return ['success' => true, 'message' => $attributes];
+        return ['success' => true];
     }
 }
