@@ -44,6 +44,8 @@ class Session
     }
     public function get(string $key, $default = null): mixed
     {
+        if (isset($_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]))
+            return $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]['value'] ?? $default;
         return $_SESSION[self::SESSION_KEY][$key] ?? $default;
     }
     public function pull(string $key, $default = null): mixed
@@ -71,14 +73,19 @@ class Session
         unset($_SESSION[self::SESSION_KEY][$key]);
         return $data;
     }
-    public function setFlash(string $key, $value): void
+    public function flash(string|array $key, $value = null): void
     {
+        if (is_array($key)) {
+            if (!isset($value)) {
+                foreach ($key as $k => $v)
+                    $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$k] = ['remove' => false, 'value' => $v];
+            } else {
+                throw new \InvalidArgumentException("\$value is required as, \$key is a string.");
+            }
+        }
         $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key] = ['remove' => false, 'value' => $value];
     }
-    public function getFlash(string $key, $default = null): mixed
-    {
-        return $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]['value'] ?? $default;
-    }
+
     public function regenerate(bool $deleteOldSession = true): void
     {
         session_regenerate_id($deleteOldSession);
