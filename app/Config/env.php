@@ -18,7 +18,7 @@ class env
     private const ENVIRONMENT = 'production';
     private const BASE_URL = 'http://localhost';
     private const DEVELOPMENT_SERVER_BASE_URL = 'http://localhost:5000'; // only http localhost urls
-    private const TIMEZONE = 'Asia/Calcutta';
+    private const TIMEZONE = 'Asia/Kolkata';
 
 
 }
