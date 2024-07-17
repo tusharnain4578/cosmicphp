@@ -9,16 +9,21 @@ class Response
     public const RESPONSE_CONTENT_TYPE_JSON = 'application/json';
     private static string $contentType = self::RESPONSE_CONTENT_TYPE_HTML;
     private static Response $sharedResponse;
+    private static int $statusCode = 200;
     public static function getInstance(bool $shared = false): Response
     {
         if ($shared)
             return self::$sharedResponse ??= new Response;
         return new Response;
     }
-
     public function setContentType(string $type): void
     {
         self::$contentType = $type;
+    }
+    public function setStatusCode(int $statusCode): self
+    {
+        self::$statusCode = $statusCode;
+        return $this;
     }
     public function getContentType(): string
     {
@@ -59,6 +64,7 @@ class Response
             $this->setResponseBody($data);
 
         header('Content-Type: ' . self::$contentType);
+        http_response_code(self::$statusCode);
         echo self::$responseBody;
     }
 

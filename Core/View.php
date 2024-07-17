@@ -8,12 +8,20 @@ use Core\Utilities\File;
 class View
 {
     public const TEMPLATE_DIRECTORY = 'Templates';
+    public const FRAMEWORK_TEMPLATE_DIRECTORY = 'Views';
     public const TEMPLATE_EXTENSION = '.phtml';
     private string $layoutFile;
     private array $sections = [];
     private array $sectionStack = [];
     private string $currentSection;
     private static $error = null;
+    private bool $isCore = false;
+
+    public function core(): self
+    {
+        $this->isCore = true;
+        return $this;
+    }
 
     public function layout(string $layoutView): self
     {
@@ -117,7 +125,7 @@ class View
         // remove below line to disable view name . seperation
         $viewFileName = str_replace('.', DIRECTORY_SEPARATOR, $viewFileName);
 
-        $filePathArray = [Path::appPath(), self::TEMPLATE_DIRECTORY, $viewFileName];
+        $filePathArray = $this->isCore ? [Path::frameworkPath(), self::FRAMEWORK_TEMPLATE_DIRECTORY, $viewFileName] : [Path::appPath(), self::TEMPLATE_DIRECTORY, $viewFileName];
         $fullFilePath = implode(DIRECTORY_SEPARATOR, $filePathArray);
 
         if (!str_ends_with($viewFileName, self::TEMPLATE_EXTENSION))

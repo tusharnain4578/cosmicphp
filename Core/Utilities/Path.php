@@ -50,7 +50,7 @@ class Path
             if (!empty($path))
                 $joinedPath .= $dirSep . $path;
         }
-        $joinedPath = $dirSep . trim($joinedPath, "\{$dirSep}\ ");
+        $joinedPath = ($dirSep === '\\' ? '' : $dirSep) . trim($joinedPath, "\{$dirSep}\ ");
         return $joinedPath;
     }
 }

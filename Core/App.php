@@ -75,7 +75,8 @@ class App
             }
 
         } catch (\Exception $e) {
-            throw $e;
+            $exceptionHandler = new ExceptionHandler();
+            $exceptionHandler->handle($e);
         }
     }
 

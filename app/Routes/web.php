@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\HomeController;
+use App\Controllers\DevController;
 use Core\Router;
 
 /**
@@ -15,6 +16,6 @@ $router->get('/resume', 'HomeController@resume')->name('resume');
 $router->match(['get', 'post'], '/projects', 'HomeController@projects')->name('projects');
 $router->get('/contact', 'HomeController@contact')->name('contact');
 
-$router->get('/dev', 'DevController@index')->name('dev');
+$router->get('/dev', [DevController::class, 'index'])->name('dev');
 
 $router->get('/json/(:alpha_spaces)', 'HomeController@json')->name('json');

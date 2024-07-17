@@ -238,7 +238,7 @@ class Router
         if ($targetRoute) {
             $this->executeRoute($targetRoute, $params);
         } else {
-            echo "NOT FOUND";
+            $this->response->setStatusCode(statusCode: 404)->send((new View)->core()->render('errors.error_404'));
         }
     }
 

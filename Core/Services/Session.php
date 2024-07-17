@@ -7,7 +7,7 @@ namespace Core\Services;
  */
 class Session
 {
-    private const SESSION_COOKIE_NAME = 'PHPSESSID';
+    private const SESSION_COOKIE_NAME = 'cosmic_session';
     private const SESSION_KEY = '__core';
     private const FLASH_KEY = '__flash';
     private static Session $sharedInstance;
@@ -44,8 +44,6 @@ class Session
     }
     public function get(string $key, $default = null): mixed
     {
-        if (isset($_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]))
-            return $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]['value'] ?? $default;
         return $_SESSION[self::SESSION_KEY][$key] ?? $default;
     }
     public function pull(string $key, $default = null): mixed
@@ -69,21 +67,33 @@ class Session
     }
     public function remove(string $key): mixed
     {
-        $data = $_SESSION[self::SESSION_KEY][$key] ?? null;
-        unset($_SESSION[self::SESSION_KEY][$key]);
-        return $data;
+        return $this->pull($key, default : null);
     }
-    public function flash(string|array $key, $value = null): void
+    public function setFlash(string|array $key, $value = null): void
     {
         if (is_array($key)) {
             if (!isset($value)) {
                 foreach ($key as $k => $v)
-                    $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$k] = ['remove' => false, 'value' => $v];
+                    $_SESSION[self::FLASH_KEY][$k] = ['remove' => false, 'value' => $v];
             } else {
                 throw new \InvalidArgumentException("\$value is required as, \$key is a string.");
             }
         }
-        $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key] = ['remove' => false, 'value' => $value];
+        $_SESSION[self::FLASH_KEY][$key] = ['remove' => false, 'value' => $value];
+    }
+    public function getFlash(string $key, $default = null): mixed
+    {
+        return $_SESSION[self::FLASH_KEY][$key]['value'] ?? $default;
+    }
+    public function pullFlash(string $key, $default = null): mixed
+    {
+        $data = $_SESSION[self::FLASH_KEY][$key]['value'] ?? $default;
+        unset($_SESSION[self::FLASH_KEY][$key]);
+        return $data;
+    }
+    public function hasFlash(string $key): bool
+    {
+        return isset($_SESSION[self::FLASH_KEY][$key]);
     }
 
     public function regenerate(bool $deleteOldSession = true): void
@@ -92,18 +102,18 @@ class Session
     }
     private function markFlashRemove(): void
     {
-        $sessionData = $_SESSION[self::SESSION_KEY][self::FLASH_KEY] ?? null;
+        $sessionData = $_SESSION[self::FLASH_KEY] ?? null;
         if (!is_null($sessionData))
             foreach ($sessionData as $key => $data)
-                $_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]['remove'] = true;
+                $_SESSION[self::FLASH_KEY][$key]['remove'] = true;
     }
     private function removeFlash(bool $force = false): void
     {
-        $sessionData = $_SESSION[self::SESSION_KEY][self::FLASH_KEY] ?? null;
+        $sessionData = $_SESSION[self::FLASH_KEY] ?? null;
         if (!is_null($sessionData)) {
             foreach ($sessionData as $key => $data) {
                 if ($force || $data['remove'])
-                    unset($_SESSION[self::SESSION_KEY][self::FLASH_KEY][$key]);
+                    unset($_SESSION[self::FLASH_KEY][$key]);
             }
         }
     }
