@@ -29,7 +29,7 @@ class Session
     }
     public function start(): void
     {
-        if (session_status() == PHP_SESSION_NONE) {
+        if (!$this->isRunning()) {
             session_name(self::SESSION_COOKIE_NAME);
             session_start();
         }
@@ -37,6 +37,10 @@ class Session
     public function close(): void
     {
         session_write_close();
+    }
+    public function isRunning(): bool
+    {
+        return session_status() !== PHP_SESSION_NONE;
     }
     public function set(string $key, $value): void
     {

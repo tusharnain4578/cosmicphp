@@ -15,10 +15,26 @@ namespace App\Config;
  */
 class env
 {
-    private const ENVIRONMENT = 'production';
-    private const BASE_URL = 'http://localhost';
-    private const DEVELOPMENT_SERVER_BASE_URL = 'http://localhost:5000'; // only http localhost urls
-    private const TIMEZONE = 'Asia/Kolkata';
+    public const array VARS = [
 
 
+        'ENVIRONMENT' => 'production',
+
+
+        'BASE_URL' => 1,
+
+
+        'DEVELOPMENT_SERVER_BASE_URL' => 'http://localhost:5000',
+
+
+        'TIMEZONE' => 'Asia/Kolkata',
+
+
+        'session.token_name' => 'cosmic_token',
+        'session.expire' => 10, // seconds
+
+
+
+
+    ];
 }

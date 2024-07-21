@@ -26,7 +26,7 @@ class CLI
     {
         Console::success(
             sprintf(
-                'Buzz PHP - Command Line Tool - Server Time: %s UTC%s',
+                'Cosmic PHP - Command Line Tool - Server Time: %s UTC%s',
                 date('Y-m-d H:i:s'),
                 date('P')
             )

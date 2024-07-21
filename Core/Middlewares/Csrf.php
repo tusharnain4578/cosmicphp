@@ -1,12 +1,15 @@
 <?php
 
-namespace App\Middlewares;
+namespace Core\Middlewares;
 
+
+use Core\Exceptions\SecurityException;
 use Core\Interfaces\IMiddleware;
 use Core\Request;
 use Core\Response;
+use Core\Security\Csrf as CsrfSecurity;
 
-class TestMiddleware implements IMiddleware
+class Csrf implements IMiddleware
 {
 
     /**
@@ -21,7 +24,13 @@ class TestMiddleware implements IMiddleware
 
     public function before(Request $request, Response $response)
     {
-        d('Test Middleware');
+        $csrfSecurity = new CsrfSecurity();
+
+        if (!$csrfSecurity->verifyToken()) {
+
+            throw SecurityException::actionNotAllowed();
+
+        }
     }
     public function after(Request $request, Response $response)
     {

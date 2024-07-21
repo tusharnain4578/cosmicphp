@@ -50,9 +50,6 @@ class Request
         return $this->method() === self::METHOD_GET;
     }
 
-
-
-
     public function isPost(): bool
     {
         return $this->method() === self::METHOD_POST;
@@ -68,6 +65,11 @@ class Request
         return strtolower(php_sapi_name()) == Request::PHP_SAPI_CLI_SERVER;
     }
 
+
+    public function removeVar(string $name)
+    {
+        unset($_GET[$name], $_POST[$name]);
+    }
 
     public function getUri(): string
     {
@@ -116,7 +118,7 @@ class Request
         }
         foreach ($_GET as $key => $value)
             $inputs[$key] = UtilityConfig::request_input_gate($value);
-        return $inputs;
+        return $inputs ?? [];
     }
 
     public function inputPost(?string $key = null)
@@ -127,7 +129,7 @@ class Request
         }
         foreach ($_POST as $key => $value)
             $inputs[$key] = UtilityConfig::request_input_gate($value);
-        return $inputs;
+        return $inputs ?? [];
     }
 
     public function validator(): Validator

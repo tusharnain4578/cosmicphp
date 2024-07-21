@@ -7,15 +7,15 @@ use Core\Response;
 
 function d(...$data)
 {
-    ExceptionHandler::dump($data);
+    ExceptionHandler::dump(...$data);
 }
 function dd(...$data)
 {
-    ExceptionHandler::dumpAndDie($data);
+    ExceptionHandler::dumpAndDie(...$data);
 }
-function escapeHtml(int|string|array|object $data): int|string|array|object|null
+function escapeHtml(null|int|bool|string|array|object $data): int|string|array|object|bool|null
 {
-    if (empty($data))
+    if (is_null($data))
         return null;
     if (is_array($data)) {
         foreach ($data as $key => $value)
@@ -27,6 +27,8 @@ function escapeHtml(int|string|array|object $data): int|string|array|object|null
             $data->$key = escapeHtml($value);
         return $data;
     }
+    if (is_int($data) || is_bool($data))
+        return $data;
     return htmlspecialchars((string) $data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function app(): \Core\App
@@ -61,7 +63,6 @@ function get_commandLine_arg(int $index = null)
         return $args[$index] ?? null;
     return $args;
 }
-
 
 function pdo_instance(string $group = 'default'): \PDO|null
 {

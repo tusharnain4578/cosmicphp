@@ -1,1 +1,1 @@
-console.log("Buzz PHP");
+console.log("Cosmic PHP");

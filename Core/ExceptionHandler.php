@@ -3,6 +3,7 @@
 namespace Core;
 
 use Core\Response;
+use Error;
 use \Exception;
 use Throwable;
 
@@ -26,7 +27,7 @@ class ExceptionHandler
     {
         return $this->environment === 'development';
     }
-    public function handle(Exception $e)
+    public function handle(Exception|Error $e)
     {
         $viewName = null;
         $viewData = [];
@@ -44,6 +45,8 @@ class ExceptionHandler
             ];
         }
 
+        View::clearOutputBuffer();
+
         $view = (new View)->core()->render($viewName, data: $viewData);
 
         $this->response->setStatusCode(statusCode: 500)->send($view);
@@ -59,7 +62,7 @@ class ExceptionHandler
             if (request()->isCli())
                 var_dump($dt);
             else {
-                echo '<div class="debug-output"><pre>';
+                echo '<div class="__debug-output"><pre>';
                 echo var_dump(escapeHtml($dt));
                 echo '</pre></div>';
             }
@@ -68,8 +71,6 @@ class ExceptionHandler
     public static function dumpAndDie(...$data)
     {
         View::clearOutputBuffer();
-
-        // Define the CSS styling
 
         // Output buffering
         ob_start();
@@ -83,7 +84,7 @@ class ExceptionHandler
             if (request()->isCli()) {
                 var_dump($dt);
             } else {
-                echo '<div class="debug-output"><pre>';
+                echo '<div class="__debug-output"><pre>';
                 echo var_dump(escapeHtml($dt));
                 echo '</pre></div>';
             }
@@ -169,24 +170,22 @@ class ExceptionHandler
         if (self::$ddStyleApplied)
             return '';
         self::$ddStyleApplied = true;
-        return '
-            <style>
-                .debug-output {
+        return '<style>
+                .__debug-output {
                     background-color: #f9f9f9;
                     border: 1px solid #ddd;
                     padding: 10px;
                     margin: 10px;
                     font-family: monospace;
                     white-space: pre-wrap;
-                    overflow: auto;
+                    overflow: none;
                 }
-                .debug-output pre {
+                .__debug-output pre {
                     margin: 0;
                     background-color: #f1f1f1;
                     padding: 10px;
                     border-radius: 5px;
                 }
-            </style>
-        ';
+            </style>';
     }
 }

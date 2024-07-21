@@ -74,7 +74,7 @@ class App
                 $this->setupApplication();
             }
 
-        } catch (\Exception $e) {
+        } catch (\Exception | \Error $e) {
             $exceptionHandler = new ExceptionHandler();
             $exceptionHandler->handle($e);
         }

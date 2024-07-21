@@ -2,7 +2,7 @@
 
 namespace Core\Console;
 
-use Core\Exceptions\FileAlreadyExistsException;
+use Core\Exceptions\FileException;
 use Core\Utilities\File;
 use Core\Utilities\Path;
 use Core\Utilities\Rex;
@@ -35,10 +35,9 @@ class FileGenerator
 
             File::create($filepath, $filecontent);
 
-        } catch (FileAlreadyExistsException $e) {
-
-            Console::error("$ucFirstFileType : '$name' already exists!");
-
+        } catch (FileException $e) {
+            if ($e->typeOf(FileException::FILE_ALREADY_EXISTS_EXCEPTION))
+                Console::error("$ucFirstFileType : '$name' already exists!");
         }
     }
 

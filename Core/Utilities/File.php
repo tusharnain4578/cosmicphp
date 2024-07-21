@@ -2,8 +2,7 @@
 
 namespace Core\Utilities;
 
-use Core\Console\Console;
-use Core\Exceptions\FileAlreadyExistsException;
+use Core\Exceptions\FileException;
 use Core\Utilities\Path;
 
 class File
@@ -17,7 +16,7 @@ class File
     public static function create(string $filePath, string $content)
     {
         if (file_exists($filePath))
-            throw new FileAlreadyExistsException("File : '$filePath' already exists!");
+            throw FileException::fileAlreadyExists($filePath);
 
         $dirname = dirname($filePath);
         if (!file_exists($dirname))

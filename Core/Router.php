@@ -3,7 +3,8 @@
 namespace Core;
 
 
-use App\Config\middleware as middlewareConfig;
+use App\Config\middleware as appMiddlewareConfig;
+use Core\Config\middleware as coreMiddlewareConfig;
 use Core\Interfaces\IMiddleware;
 use Core\Utilities\File;
 use Core\Utilities\Path;
@@ -215,7 +216,21 @@ class Router
             }
         }
 
+
+        $globalBeforeMiddlewares = [...(coreMiddlewareConfig::$global['before'] ?? []), ...(appMiddlewareConfig::$global['before'] ?? [])];
+        $globalAfterMiddlewares = [...(coreMiddlewareConfig::$global['after'] ?? []), ...(appMiddlewareConfig::$global['after'] ?? [])];
+
+
+
+        // before running router, first running global 'before' middlewares
+        $this->executeMiddlewares($this->getMiddlewareObjects($globalBeforeMiddlewares), 'before');
+
+        // executing routing
         $this->run();
+
+        // after running router, now running global 'after' middlewares
+        $this->executeMiddlewares($this->getMiddlewareObjects($globalAfterMiddlewares), 'after');
+
     }
 
 
@@ -310,15 +325,29 @@ class Router
     }
 
 
+    /**
+     * @param list<string> $middlewares
+     * @return list<IMiddleware>
+     */
+    private function getMiddlewareObjects(array $middlewares): array
+    {
+        return array_map(function (string $middleware) {
+
+            $middlewareObj = class_exists($middleware) ? new $middleware() :
+                coreMiddlewareConfig::getMiddlewareFromAlias(alias: $middleware, aliases: appMiddlewareConfig::$aliases);
+
+            if (!($middlewareObj instanceof IMiddleware))
+                throw new \Exception("Middleware : $middleware is not a valid middleware class.");
+
+            return $middlewareObj;
+
+        }, $middlewares);
+    }
+
 
     private function executeRoute(array $route, array $params = [])
     {
-        $middlewares = array_map(function (string $middleware) {
-            $middlewareObj = class_exists($middleware) ? new $middleware() : middlewareConfig::getMiddlewareFromAlias(alias: $middleware);
-            if (!($middlewareObj instanceof IMiddleware))
-                throw new \Exception("Middleware : $middleware is not a valid middleware class.");
-            return $middlewareObj;
-        }, $route['middlewares']);
+        $middlewares = $this->getMiddlewareObjects($route['middlewares']);
 
         // running middleware -> before
         $this->executeMiddlewares($middlewares, type: 'before'); // this can stop the script, if some response is returned from any middleware
@@ -342,14 +371,21 @@ class Router
 
         $this->response->send();
     }
-    private function executeMiddlewares(array $middlewares, string $type)
+
+    /**
+     * @param list<IMiddleware> $middlewares
+     * @param string $type
+     */
+    private function executeMiddlewares(array $middlewares, string $type): void
     {
         if (!in_array($type, ['before', 'after']))
             throw new \Exception("$type is not a middleware type");
         foreach ($middlewares as $middleware) {
             $returnResponse = $middleware->$type(request: $this->request, response: $this->response);
-            if ($returnResponse instanceof Response)
-                $returnResponse->send(); // script will end here
+            if ($returnResponse instanceof Response) {
+                $returnResponse->send();
+                exit; // script will end here
+            }
         }
     }
 }

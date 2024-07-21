@@ -27,13 +27,18 @@ class HomeController extends Controller
     }
     public function contact()
     {
+
+        if ($this->request->isPost())
+            return $this->request->inputPost();
+
+
         return view('contact');
     }
     public function index(Request $request)
     {
 
-        
-        
+
+
 
 
 

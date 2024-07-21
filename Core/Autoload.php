@@ -21,7 +21,7 @@ class Autoload
     {
 
         // first getting environment variables from app -> config -> Env.php
-        $envDefaultArray = Classic::reflection(envConfig::class)->getConstants() ?? [];
+        $envDefaultArray = envConfig::VARS ?? [];
         $envCacheArray = cache()->getPHPFileCache(self::ENV_CACHE_PHP_FILE_NAME) ?? [];
         $envArray = array_merge($envDefaultArray, $envCacheArray);
 
