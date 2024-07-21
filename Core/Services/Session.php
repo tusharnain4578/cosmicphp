@@ -67,7 +67,7 @@ class Session
     }
     public function remove(string $key): mixed
     {
-        return $this->pull($key, default : null);
+        return $this->pull($key, default: null);
     }
     public function setFlash(string|array $key, $value = null): void
     {
