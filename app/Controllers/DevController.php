@@ -13,7 +13,7 @@ class DevController extends Controller
     public function index(Request $request)
     {
 
-        throw new \Exception("example exception");
+
 
         return ['success' => true];
     }

@@ -50,6 +50,12 @@ class Request
         return $this->method() === self::METHOD_GET;
     }
 
+    public function isAJAX(): bool
+    {
+        return $this->hasHeader('X-Requested-With')
+            && strtolower($this->header('X-Requested-With')->getValue()) === 'xmlhttprequest';
+    }
+
 
     public function isPost(): bool
     {

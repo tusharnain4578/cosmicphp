@@ -133,4 +133,12 @@ class View
 
         return $fullFilePath;
     }
+
+
+    public static function clearOutputBuffer()
+    {
+        while (\ob_get_level())
+            \ob_end_clean();
+    }
+
 }

@@ -1,35 +1,34 @@
 <?php
 use Core\Database\DBConnection;
 use Core\Database\DB;
+use Core\ExceptionHandler;
 use Core\Request;
 use Core\Response;
 
-function dd(...$data)
-{
-    foreach ($data as $dt) {
-        if (request()->isCli())
-            var_dump($dt);
-        else {
-            echo '<pre>';
-            echo var_dump($dt);
-            echo '</pre>';
-        }
-    }
-    die;
-}
 function d(...$data)
 {
-    foreach ($data as $dt) {
-        if (request()->isCli())
-            var_dump($dt);
-        else {
-            echo '<pre>';
-            echo var_dump($dt);
-            echo '</pre>';
-        }
-    }
+    ExceptionHandler::dump($data);
 }
-
+function dd(...$data)
+{
+    ExceptionHandler::dumpAndDie($data);
+}
+function escapeHtml(int|string|array|object $data): int|string|array|object|null
+{
+    if (empty($data))
+        return null;
+    if (is_array($data)) {
+        foreach ($data as $key => $value)
+            $data[$key] = escapeHtml($value);
+        return $data;
+    }
+    if (is_object($data)) {
+        foreach ($data as $key => $value)
+            $data->$key = escapeHtml($value);
+        return $data;
+    }
+    return htmlspecialchars((string) $data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
 function app(): \Core\App
 {
     return \Core\App::getInstance();
