@@ -19,3 +19,6 @@ $router->match(['get', 'post'], '/contact', 'HomeController@contact')->name('con
 $router->get('/dev', [DevController::class, 'index'])->name('dev');
 
 $router->get('/json/(:alpha_spaces)', 'HomeController@json')->name('json');
+
+
+$router->get('admin', 'Admin\HomeController@index');

@@ -2,17 +2,17 @@
 
 namespace App\Database\Migrations;
 
-use Core\Database\Migration;
+use Core\Interfaces\IMigration;
 
 /**
  * up() and down() methods must return sql query string, which will get executed on running and
  * rollbacking the migration
  */
-class create_posts_table extends Migration
+class create_posts_table implements IMigration
 {
     private string $table = 'posts';
 
-    public function up(): string
+    public function up(): string|array
     {
         return "
         CREATE TABLE IF NOT EXISTS {$this->table} (
@@ -27,7 +27,7 @@ class create_posts_table extends Migration
         ";
     }
 
-    public function down(): string
+    public function down(): string|array
     {
         return "DROP TABLE IF EXISTS {$this->table};";
     }

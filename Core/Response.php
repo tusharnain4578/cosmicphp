@@ -57,6 +57,10 @@ class Response
         header("location:$url");
         exit;
     }
+    public function redirectBack(): void
+    {
+        $this->redirect(request()->getPreviousUrl());
+    }
 
     public function send(mixed $data = null)
     {

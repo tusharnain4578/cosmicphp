@@ -9,11 +9,17 @@ class Csrf
 {
     private string $tokenName;
 
-    private int $expire;
+    private bool $regenerateToken;
 
+    public bool $redirectBackOnFailure;
+
+    private int $expire;
     private array $csrfData;
 
     private Session $session;
+    private ?string $requestToken = null;
+
+    private bool $isTokenVerified = false;
 
     private const string CSRF_SESSION_KEY = '__csrf_data';
 
@@ -23,9 +29,14 @@ class Csrf
         $this->session = session();
         $this->session->start(); // already running check is inside the Session's start method.
         $this->csrfData = $this->session->get(self::CSRF_SESSION_KEY, []);
-        $this->tokenName = env('session.token_name', 'csrf_token');
-        $this->expire = env('session.expire', 0);
+        $this->tokenName = env('security.csrf.token_name', 'csrf_token');
+        $this->expire = env('security.csrf.expire', 0);
+        $this->regenerateToken = env('security.csrf.regenerate_token', false);
+        $this->redirectBackOnFailure = env('security.csrf.redirect_back_on_failure', false);
+
+        $this->initRequestToken();
     }
+
     public function getToken(): string
     {
         if (!isset($this->csrfData) or empty($this->csrfData))
@@ -47,10 +58,12 @@ class Csrf
         return $token;
     }
 
-    private function getRequestToken(): string
+    private function initRequestToken()
     {
-        return request()->inputPost($this->tokenName) ?? '';
+        $this->requestToken = request()->inputPost($this->tokenName) ?? '';
+        request()->removeVar($this->tokenName());
     }
+
     public function verifyToken(): bool
     {
         if (!in_array(strtoupper(request()->method()), ['POST']))
@@ -63,14 +76,16 @@ class Csrf
         $generatedAt = $this->csrfData['generated_at'];
         $expire = $this->csrfData['expire'];
 
-        if (($generatedAt + $expire) < Rex::timestamp()) {
+        if (($expire > 0) && ($generatedAt + $expire) < Rex::timestamp()) {
             return false;
         }
 
-        $requestToken = $this->getRequestToken();
+        $this->isTokenVerified = $token === $this->requestToken;
 
-        request()->removeVar($this->tokenName());
-        return $token === $requestToken;
+        if ($this->isTokenVerified && $this->regenerateToken)
+            $this->generateNewToken();
+
+        return $this->isTokenVerified;
     }
     public function tokenName(): string
     {

@@ -2,19 +2,22 @@
 
 namespace App\Database\Migrations;
 
-use Core\Database\Migration;
+use Core\Interfaces\IMigration;
 
 /**
  * up() and down() methods must return sql query string, which will get executed on running and
  * rollbacking the migration
  */
-class create_users_table extends Migration
+class create_users_table implements IMigration
 {
     private string $table = 'users';
 
-    public function up(): string
+    /**
+     * @return string|string[]
+     */
+    public function up(): string|array
     {
-        return "
+        $query1 = "
         CREATE TABLE IF NOT EXISTS {$this->table} (
             `id` bigint UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT,
             `full_name` varchar(255) NOT NULL,
@@ -26,8 +29,13 @@ class create_users_table extends Migration
             `updated_at` timestamp NULL DEFAULT NULL
         );
         ";
+        return $query1;
     }
-    public function down(): string
+
+    /**
+     * @return string|string[]
+     */
+    public function down(): string|array
     {
         return "DROP TABLE IF EXISTS {$this->table};";
     }

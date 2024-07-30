@@ -32,9 +32,9 @@ abstract class Migration
             try {
                 $obj = new $class();
                 if (method_exists($obj, method: 'up')) {
-                    $query = trim($obj->up());
-                    if (!is_string($query) || empty($query))
-                        throw new \Exception("Migration : '$class' 'up()' method must return non-empty sql query!");
+                    $queries = $obj->up();
+                    if (!is_array($queries))
+                        $queries = [$queries];
                     $filedata['group'] = (property_exists($obj, 'group') && !empty(trim($obj->group ?? ''))) ? $obj->group : 'default';
                     // checking if already executed
                     $isExecutedBefore = (function () use (&$executedMigrations, &$filedata): bool{
@@ -46,7 +46,13 @@ abstract class Migration
                     })();
                     if ($isExecutedBefore)
                         continue;
-                    db($filedata['group'])->execute($query);
+
+                    foreach ($queries as $query) {
+                        $query = trim($query);
+                        if (!is_string($query) || empty($query))
+                            throw new \Exception("Migration : '$class' 'up()' method must return non-empty sql query!");
+                        db($filedata['group'])->execute($query);
+                    }
                     if (!(property_exists($obj, 'isCore') && $obj->isCore)) {
                         // If this is app migration, only then we will log it+
                         db()->table(self::MIGRATION_TABLE)->insert([

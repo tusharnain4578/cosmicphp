@@ -2,17 +2,22 @@
 
 namespace Core\Services;
 
+use Core\Request;
+
 /**
  * Singleton Method
  */
 class Session
 {
-    private const SESSION_COOKIE_NAME = 'cosmic_session';
+    private static string $sessionCookieName;
+    private const string DEFAULT_SESSION_COOKIE_NAME = 'cosmic_session';
     private const SESSION_KEY = '__core';
     private const FLASH_KEY = '__flash';
     private static Session $sharedInstance;
     public function __construct()
     {
+        $ckName = trim(env('session.cookie_name', 'cosmic_session'));
+        self::$sessionCookieName = empty($ckName) ? self::DEFAULT_SESSION_COOKIE_NAME : $ckName;
         if (isset(self::$sharedInstance))
             throw new \Exception("Only 1 object can be made from Session class. Use Session::getInstance() instead.");
         $this->start();
@@ -22,6 +27,10 @@ class Session
     public function __destruct()
     {
         $this->removeFlash();
+
+        if (!request()->isCli()) {
+            $this->set(Request::PREV_URL_SESSION_KEY, ['url' => request()->getCurrentUrl(), 'query_string' => $_SERVER['QUERY_STRING'] ?? '']);
+        }
     }
     public static function getInstance(): self
     {
@@ -30,7 +39,7 @@ class Session
     public function start(): void
     {
         if (!$this->isRunning()) {
-            session_name(self::SESSION_COOKIE_NAME);
+            session_name(self::$sessionCookieName);
             session_start();
         }
     }

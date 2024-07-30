@@ -11,6 +11,7 @@ class Rex
 {
     private static string $timezone = "UTC";
     private static bool $isAppNowDefined = false;
+    private const string DEFAULT_FORMAT = 'Y-m-d H:i:s';
 
     public static function init()
     {
@@ -26,7 +27,7 @@ class Rex
      */
     public static function now(): string
     {
-        return self::$isAppNowDefined ? UtilityConfig::now() : date('Y-m-d H:i:s');
+        return self::$isAppNowDefined ? UtilityConfig::now() : date(self::DEFAULT_FORMAT);
     }
 
     public static function timestamp(): int

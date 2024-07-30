@@ -30,9 +30,14 @@ class env
         'TIMEZONE' => 'Asia/Kolkata',
 
 
-        'session.token_name' => 'cosmic_token',
-        'session.expire' => 10, // seconds
 
+        'session.cookie_name' => 'cosmic_session',
+
+
+        'security.csrf.token_name' => 'cosmic_token',
+        'security.csrf.expire' => 0, // seconds  // 0 means unlimited
+        'security.csrf.regenerate_token' => false,
+        'security.csrf.redirect_back_on_failure' => false,
 
 
 

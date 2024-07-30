@@ -24,9 +24,13 @@ class Csrf implements IMiddleware
 
     public function before(Request $request, Response $response)
     {
-        $csrfSecurity = new CsrfSecurity();
+        $csrf = new CsrfSecurity();
 
-        if (!$csrfSecurity->verifyToken()) {
+        if (!$csrf->verifyToken()) {
+
+            if ($csrf->redirectBackOnFailure) {
+                $response->redirectBack();
+            }
 
             throw SecurityException::actionNotAllowed();
 

@@ -90,7 +90,7 @@ abstract class Model
     public function delete(): bool
     {
         if (!$this->exists)
-            throw new \Exception("Record doesn't exists in the database yet!");
+            throw new \Exception("Record doesn't exists in the database.");
         if (!isset($this->attributes[static::$primaryKey]))
             throw new \Exception("Primary key must exist in model object for the deletion!");
         return self::table()->deleteById($this->attributes[static::$primaryKey], static::$primaryKey);

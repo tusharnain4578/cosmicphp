@@ -3,20 +3,27 @@
 namespace {{namespace}};
 
 use Core\Database\Migration;
+use Core\Interfaces\IMigration;
 
 /**
  * up() and down() methods must return sql query string, which will get executed on running and
  * rollbacking the migration
  */
-class {{classname}} extends Migration
+class {{classname}} extends Migration implements IMigration
 {
     {{group_field}}
 
+    /**
+     * @return string|string[]
+     */
     public function up(): string
     {
         return "";
     }
 
+    /**
+     * @return string|string[]
+     */
     public function down(): string
     {
         return "";

@@ -13,6 +13,15 @@ class Request
     private static ?string $baseUrl = null;
     private static Request $sharedRequest;
     public Session $session;
+
+
+
+    private string $currentUrl;
+    private array $previousUrlData;
+
+    public const PREV_URL_SESSION_KEY = '__sess_prev_url';
+
+
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
     public const METHODS = ['GET', 'POST'];
@@ -25,6 +34,7 @@ class Request
     {
         $this->session = session();
     }
+
 
     public static function getInstance(bool $shared = false): Request
     {
@@ -76,7 +86,7 @@ class Request
         if (!is_null($this->uri))
             return $this->uri;
 
-        $requestUri = parse_url(urldecode($_SERVER['REQUEST_URI']));
+        $requestUri = parse_url(urldecode($_SERVER['REQUEST_URI'] ?? ''));
         $requestPath = $requestUri['path'];
         $scriptDir = substr($this->startingScriptUrl(), 0, -strlen('/server.php'));
         $requestPath = substr($requestPath, strlen($scriptDir));
@@ -137,5 +147,29 @@ class Request
         $validator = new Validator;
         $validator->data([...$_GET, ...$_POST]);
         return $validator;
+    }
+
+
+
+    // Urls
+
+    public function getCurrentUrl(bool $includeQueries = false): string
+    {
+        $url = $this->currentUrl ??= $this->getBaseUrl($this->getUri());
+        if ($includeQueries && isset($_SERVER['QUERY_STRING']) && !empty($_SERVER['QUERY_STRING']))
+            $url .= '?' . $_SERVER['QUERY_STRING'];
+        return $url;
+    }
+
+
+
+    public function getPreviousUrl(bool $includeQueries = false): ?string
+    {
+        return $this->previousUrlData[$includeQueries ? 'url_with_query' : 'url'] ??= (function () use ($includeQueries): ?string{
+            $prevUrlData = $this->session->get(self::PREV_URL_SESSION_KEY, null);
+            if (!$prevUrlData)
+                return $this->getCurrentUrl();
+            return $includeQueries ? $prevUrlData['url'] . (!empty($prevUrlData['query_string']) ? '?' . $prevUrlData['query_string'] : '') : $prevUrlData['url'];
+        })();
     }
 }

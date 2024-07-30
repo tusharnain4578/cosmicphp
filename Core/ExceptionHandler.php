@@ -29,6 +29,11 @@ class ExceptionHandler
     }
     public function handle(Exception|Error $e)
     {
+
+        if (request()->isCli()) {
+            throw $e;
+        }
+
         $viewName = null;
         $viewData = [];
 

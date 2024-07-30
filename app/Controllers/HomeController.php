@@ -2,14 +2,9 @@
 
 namespace App\Controllers;
 
-use App\Models\Customer;
-use App\Models\Post;
-use App\Models\User;
-use App\Models\Wallet;
+
 use Core\Controller;
 use Core\Request;
-use Core\Response;
-use Core\Utilities\Rex;
 
 
 class HomeController extends Controller
@@ -40,9 +35,7 @@ class HomeController extends Controller
 
 
 
-
-
-        return view('home', ['name' => 'Tushar']);
+        return $this->render('home', ['name' => 'Tushar']);
     }
 
     public function json($name)

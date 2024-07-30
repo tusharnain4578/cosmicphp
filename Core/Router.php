@@ -317,7 +317,11 @@ class Router
 
     private function getControllerFromString(string $callback): array
     {
-        $parts = explode(separator: self::ROUTE_HANDLER_STRING_SEPARATOR, string: $callback);
+        $separator = self::ROUTE_HANDLER_STRING_SEPARATOR;
+        $separatorCount = substr_count($callback, $separator);
+        if ($separatorCount !== 1)
+            throw new \Exception("String route handler must be in format : Classname{$separator}Methodname.");
+        $parts = explode(separator: $separator, string: $callback);
         $className = $parts[0];
         $actionMethod = $parts[1];
         $fullClassName = "\\{$this->controllerNamespace}\\{$className}";
