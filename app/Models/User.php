@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Core\Model;
 
-class User extends Model
+use Core\Services\Authentication\User as Authenticable;
+
+class User extends Authenticable
 {
     protected static string $table = 'users';
     protected static array $fillable = ['full_name', 'email', 'phone', 'role', 'password'];
@@ -14,14 +15,6 @@ class User extends Model
 
 
 
-    public function wallet(): Wallet|null
-    {
-        return $this->hasOne(Wallet::class, 'user_id');
-    }
 
-    public function posts(): array
-    {
-        return $this->hasMany(Post::class, 'user_id');
-    }
 
 }

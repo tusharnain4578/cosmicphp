@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Core\Model;
+use Core\Base\Model;
 
 class Customer extends Model
 {

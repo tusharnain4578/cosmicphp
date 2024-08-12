@@ -12,7 +12,7 @@ class middleware
 
     public static array $global = [
         'before' => [
-            'csrf'
+            // 'csrf'
         ],
         'after' => [
 

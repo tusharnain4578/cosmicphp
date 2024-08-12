@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Core\Model;
+use Core\Base\Model;
 
 class Wallet extends Model
 {
@@ -12,12 +12,6 @@ class Wallet extends Model
     protected static string $updatedField = 'updated_at';
 
 
-
-
-    public function user(): User|null
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
 
 
 }

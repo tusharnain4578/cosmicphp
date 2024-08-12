@@ -7,7 +7,7 @@
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ ^$1 [N]
     RewriteCond %{REQUEST_URI} (\.\w+$) [NC]
-    RewriteRule ^(.*)$ public/$1
+    RewriteRule ^(.*)$ www/$1
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ server.php

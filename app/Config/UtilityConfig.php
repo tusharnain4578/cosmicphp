@@ -9,7 +9,7 @@ namespace App\Config;
  */
 class UtilityConfig
 {
-    const ROUTE_GROUP_NAME_SEPARATOR = '.';
+    const string ROUTE_GROUP_NAME_SEPARATOR = '.';
 
 
 
